@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список пользователей</title>
+</head>
+<body>
+    <h1>Список пользователей</h1>
+    <table style="border: 1;">
+        <thead>
+            <tr>
+                <th>Имя</th>
+                <th>Пароль</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.password }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="2">Пользователи не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <h2>
+                    {% for chat in chats %}
+            <dir>
+                <span>{{ chat.user1 }}</span>
+                <span>{{ chat.user2 }}</span>
+                <span>{{ chat.id }}</span>
+            </dir>
+                    {% endfor %}
+    </h2>
+    <h3>
+        <h3>Сообщения</h3>
+<ul>
+  {% for msg in messages %}
+    <li>
+        Sender: {{ msg.sender }}<br>
+Chat ID: {{ msg.chat_id }}<br>
+Text: {{ msg.text }}<br>
+Timestamp: {{ msg.timestamp }}<br>
+    </li>
+  {% else %}
+    <li>Сообщений нет</li>
+  {% endfor %}
+</ul>
+
+    </h3>
+</body>
+</html>
