@@ -28,8 +28,8 @@ export function useChat(chatId, name, onMessage) {
   }, [chatId]);
 
   // Функция для отправки
-  const sendMessage = (text) => {
-    socketRef.current.emit('send_message', {
+  const sendMessage = (text,path) => {
+    socketRef.current.emit(path, {
       chat_id: chatId,
       sender: name,
       text,

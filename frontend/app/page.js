@@ -26,8 +26,6 @@ const { sendMessage: wsSendMessage } = useChat(
   name,
   (msg) => setMessages(prev => [...prev, msg])
 );
-
-
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз
 useEffect(() => {
@@ -66,13 +64,10 @@ useEffect(() => {
   if (!chatId) return;
   (async () => {
     const history = await fetchMessages(chatId);
+    console.log(history)
     setMessages(history);
   })();
 }, [chatId]);
-
-
-
-
 
 
   return (
@@ -87,16 +82,16 @@ useEffect(() => {
       <ChatHeader currentUser={currentUser}/>
       <Messages messages={messages} name={name}/>
         <div className="chat-input">
-<InputField
-  newMessage={newMessage}
-  setNewMessage={setNewMessage}
-  handleSendMessage={wsSendMessage}
-/>
-<InputButtons
-  newMessage={newMessage}
-  setNewMessage={setNewMessage}
-  handleSendMessage={wsSendMessage}
-/>
+      <InputField
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        handleSendMessage={wsSendMessage}
+      />
+      <InputButtons
+        newMessage={newMessage}
+        setNewMessage={setNewMessage}
+        handleSendMessage={wsSendMessage}
+      />
         </div>
       </div>
        )}
