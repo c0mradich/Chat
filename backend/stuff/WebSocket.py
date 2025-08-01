@@ -6,6 +6,9 @@ from datetime import datetime
 import base64
 from .routes import get_mime_type_from_extension
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
 def generate_file_hash(original_name, sender, chat_id, timestamp):
     # Составляем строку для хеширования
     data_string = f"{original_name}{sender}{chat_id}{timestamp}"
@@ -17,9 +20,7 @@ def generate_file_hash(original_name, sender, chat_id, timestamp):
     # Собираем финальное имя файла
     return f"{hash_hex}{ext}"
 
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+
 
 
 def register_socket_handlers(socketio):
@@ -70,12 +71,12 @@ def register_socket_handlers(socketio):
             file_base64 = file_base64.split(",", 1)[1]
         
         file_bytes = base64.b64decode(file_base64)
-        file_path = os.path.join("uploads", hashed_filename)
+        file_path = os.path.join(UPLOAD_FOLDER, hashed_filename)
         with open(file_path, "wb") as f:
             f.write(file_bytes)
         
         # Сохраняем путь в text
-        msg = Message(chat_id=chat_id, sender=sender, text=hashed_filename)
+        msg = Message(chat_id=chat_id, sender=sender, text=file_path)
         db.session.add(msg)
         db.session.commit()
 

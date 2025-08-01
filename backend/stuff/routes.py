@@ -113,10 +113,10 @@ def register_routes(app):
 
     @app.route('/get_messages/<int:chat_id>', methods=['GET'])
     def get_messages(chat_id):
-        UPLOAD_FOLDER = 'uploads'
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
         try:
             messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.timestamp.asc()).all()
-
             messages_data = []
             for msg in messages:
                 msg_dict = {
@@ -130,7 +130,6 @@ def register_routes(app):
                 if msg.text.startswith("/uploads/"):
                     filename = msg.text[len("/uploads/"):]  # Оставляем только имя файла
                     name_part, ext_part = os.path.splitext(filename)
-                    
                     if len(name_part) == 64 and ext_part:  # Строго 64 символа + расширение
                         file_path = os.path.join(UPLOAD_FOLDER, filename)
                         if os.path.isfile(file_path):
