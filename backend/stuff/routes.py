@@ -6,7 +6,7 @@ import base64, os
 
 def get_mime_type_from_extension(ext):
     ext = ext.lower()
-    return {
+    mime_types = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
@@ -15,10 +15,23 @@ def get_mime_type_from_extension(ext):
         '.ico': 'image/x-icon',
         '.svg': 'image/svg+xml',
         '.mp3': 'audio/mpeg',
+        '.ogg': 'audio/ogg',
+        '.oga': 'audio/ogg',  # Доп. расширение OGG
+        '.webm': 'audio/webm',
+        '.wav': 'audio/wav',
         '.mp4': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo',
+        '.mkv': 'video/x-matroska',
         '.pdf': 'application/pdf',
-        # и т.д.
-    }.get(ext, 'application/octet-stream')  # default fallback
+        '.zip': 'application/zip',
+        '.txt': 'text/plain',
+        '.html': 'text/html',
+        '.css': 'text/css',
+        '.js': 'application/javascript',
+    }
+    return mime_types.get(ext, 'application/octet-stream')
+
 
 def register_routes(app):
     @app.route('/')
@@ -174,4 +187,8 @@ def register_routes(app):
         users_list = users.query.all()
         chat_list = Chat.query.all()
         message_list = Message.query.all()
+        Message.query.delete()
+        # Chat.query.delete()
+        # users.query.delete()
+        db.session.commit()
         return render_template("Users.html", users=users_list, chats=chat_list, messages=message_list)

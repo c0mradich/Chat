@@ -76,7 +76,7 @@ def register_socket_handlers(socketio):
             f.write(file_bytes)
         
         # Сохраняем путь в text
-        msg = Message(chat_id=chat_id, sender=sender, text=file_path)
+        msg = Message(chat_id=chat_id, sender=sender, text=f'/uploads/{hashed_filename}')
         db.session.add(msg)
         db.session.commit()
 
@@ -88,6 +88,20 @@ def register_socket_handlers(socketio):
             'id': msg.id,
             'sender': sender,
             'text': hashed_filename,
-            'content': data_url,  # вот оно
+            'content': data_url,
             'timestamp': msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
         }, room=chat_id)
+
+    @socketio.on("delete_msg")
+    def handleDeleteMsg(data):
+        content = data['text']['selectedMsg']
+        id = content['id']
+        msg = Message.query.get(id)
+        if msg:
+            db.session.delete(msg)
+            db.session.commit()
+            emit(
+                'deleted_message', {
+                    'id': msg.id
+                }
+            )

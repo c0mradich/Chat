@@ -1,5 +1,7 @@
 import React from "react";
-import {useRef} from "react"
+import {useRef, useState} from "react"
+import { stopMicro, startMicro } from "./micro";
+import { Dialog, DialogTitle, DialogActions, Button } from '@mui/material';
 
 export function Progress({ loading, error }) {
   if (loading) return <div>Loading...</div>;
@@ -37,41 +39,62 @@ export function User_List({FilteredUsers, handleUserClick}){
     )
 }
 
-export function Messages({ messages, name }) {
-  function renderContent(msg) {
-  try {
-    const content = msg.content;
-    if (typeof content !== 'string' || !content.startsWith('data:')) {
-      throw new Error("msg.content не содержит base64");
-    }
+export function Messages({ messages, name, handleSendMessage }) {
+  const [open, setOpen] = useState(false);
+  const [selectedMsg, setSelectedMsg] = useState(null);
 
-    const [metadata, base64Data] = content.split(",");
-    if (!metadata || !base64Data) {
-      throw new Error("Invalid base64 format");
-    }
-
-    const mime = metadata.split(":")[1]?.split(";")[0] || '';
-
-    if (mime.startsWith("image/")) {
-      return <img src={content} alt="file" className="message-image" />;
-    } else if (mime.startsWith("audio/")) {
-      return <audio controls src={content} />;
-    } else if (mime.startsWith("video/")) {
-      return <video controls src={content} />;
-    } else {
-      return (
-        <a href={content} download>
-          Скачать файл
-        </a>
-      );
-    }
-  } catch (e) {
-    console.warn("Не base64 или ошибка рендера:", e.message);
-    console.warn(msg)
-    return <div className="message-text">{msg.text}</div>;
+  function handleOpenPopup(msg) {
+    setSelectedMsg(msg);
+    setOpen(true);
   }
-}
 
+  function handleClosePopup() {
+    setOpen(false);
+    setSelectedMsg(null);
+  }
+
+  function handleDelete() {
+    handleSendMessage({selectedMsg}, 'delete_msg')
+    console.log("Удалить сообщение:", selectedMsg);
+    // TODO: Твоя логика удаления
+    handleClosePopup();
+  }
+
+  function handleEdit() {
+    console.log("Редактировать сообщение:", selectedMsg);
+    // TODO: Твоя логика редактирования
+    handleClosePopup();
+  }
+
+  function renderContent(msg) {
+    try {
+      const content = msg.content;
+      if (typeof content !== 'string' || !content.startsWith('data:')) {
+        throw new Error("msg.content не содержит base64");
+      }
+
+      const [metadata, base64Data] = content.split(",");
+      if (!metadata || !base64Data) {
+        throw new Error("Invalid base64 format");
+      }
+
+      const mime = metadata.split(":")[1]?.split(";")[0] || '';
+
+      if (mime.startsWith("image/")) {
+        return <img src={content} alt="file" className="message-image" />;
+      } else if (mime.startsWith("audio/")) {
+        return <audio controls src={content} />;
+      } else if (mime.startsWith("video/")) {
+        return <video controls src={content} />;
+      } else {
+        return <a href={content} download>Скачать файл</a>;
+      }
+    } catch (e) {
+      console.warn("Не base64 или ошибка рендера:", e.message);
+      console.warn(msg);
+      return <div className="message-text">{msg.text}</div>;
+    }
+  }
 
   return (
     <div className="messages">
@@ -85,7 +108,13 @@ export function Messages({ messages, name }) {
         const displayName = isMe ? 'You' : msg.sender;
 
         return (
-          <div key={index} className={`message ${isMe ? 'sent' : 'received'}`}>
+          <div
+            key={index}
+            className={`message ${isMe ? 'sent' : 'received'}`}
+            onClick={() => handleOpenPopup(msg)}
+            style={{ cursor: 'pointer' }}
+            data-id={msg.id}
+          >
             <div className="message-sender">{displayName}</div>
             {msg.content ? renderContent(msg) : (
               <div className="message-text">{msg.text}</div>
@@ -93,9 +122,19 @@ export function Messages({ messages, name }) {
           </div>
         );
       })}
+
+      <Dialog open={open} onClose={handleClosePopup}>
+        <DialogTitle>Опции сообщения</DialogTitle>
+        <DialogActions>
+          <Button onClick={handleEdit} color="primary">Редактировать</Button>
+          <Button onClick={handleDelete} color="error">Удалить</Button>
+          <Button onClick={handleClosePopup}>Закрыть</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
+
 
 
 
@@ -126,6 +165,10 @@ export function InputField({ newMessage, setNewMessage, handleSendMessage }) {
   );
 }
 export function InputButtons({ newMessage, setNewMessage, handleSendMessage, }) {
+  const [micStream, setMicStream] = useState(null);
+  const [micRecorder, setMicRecorder] = useState(null);
+  const [mimeType, setMimeType] = useState(null)
+
   const onSendClick = () => {
     if (!newMessage.trim()) return;
     handleSendMessage(newMessage, 'send_message');
@@ -159,7 +202,11 @@ const handleFileChange = (e) => {
       />
       <button className="call-btn">📞</button>
       <button className="video-call-btn">📹</button>
-      <button className="audio-msg-btn">🎤</button>
+            {micStream ? (
+        <button className="audio-msg-btn" onClick={() => stopMicro(micStream, micRecorder, mimeType, setMicStream, setMicRecorder, setMimeType, handleSendMessage)}>⏹️</button>
+      ) : (
+        <button className="audio-msg-btn" onClick={() => startMicro(setMicRecorder, setMicStream, setMimeType)}>🎤</button>
+      )}
       <button className="file-input-btn" onClick={inputFile}>📎</button>
       <button className="send-btn" onClick={onSendClick}>➤</button>
     </div>
