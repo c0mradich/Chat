@@ -7,3 +7,5 @@ def get_or_create_chat(user1, user2, Chat, db):
             db.session.add(chat)
             db.session.commit()
         return chat.id
+    
+# def get_or_create_group_chat([users], Chat, db)

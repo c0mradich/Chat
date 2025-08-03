@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-export function useChat(chatId, name, onMessage, onDeleteMessage) {
+export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage) {
   const socketRef = useRef();
 
   useEffect(() => {
@@ -22,6 +22,9 @@ export function useChat(chatId, name, onMessage, onDeleteMessage) {
 
     socketRef.current.on('deleted_message', (msg)=>{
       onDeleteMessage(msg.id)
+    })
+    socketRef.current.on('edit_msg', (msg)=>{
+      onEditMessage(msg)
     })
 
     return () => {

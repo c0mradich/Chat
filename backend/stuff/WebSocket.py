@@ -96,6 +96,7 @@ def register_socket_handlers(socketio):
     def handleDeleteMsg(data):
         content = data['text']['selectedMsg']
         id = content['id']
+        chat_id = data['chat_id']
         msg = Message.query.get(id)
         if msg:
             db.session.delete(msg)
@@ -103,5 +104,19 @@ def register_socket_handlers(socketio):
             emit(
                 'deleted_message', {
                     'id': msg.id
-                }
+                }, room=chat_id
             )
+    @socketio.on("edit_msg")
+    def editing_msg(data):
+        msg_id = data["text"]["id"]
+        chat_id = data["chat_id"]
+        new_text = data["text"]["text"]
+        msg = Message.query.get(msg_id)
+        if msg:
+            msg.text = new_text
+            db.session.commit()
+            emit('edit_msg', {
+                'id': msg.id,
+                'text': new_text,
+            }, room=chat_id)
+        print(data)

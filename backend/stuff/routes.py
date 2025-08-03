@@ -1,6 +1,6 @@
 from flask import request, jsonify, session, render_template
 from stuff import db
-from stuff.db import users, Chat, Message
+from stuff.db import User, Chat, Message
 from Python_Utils.utils import get_or_create_chat
 import base64, os
 
@@ -47,12 +47,12 @@ def register_routes(app):
         password = data.get('password')
 
         # Проверка, существует ли пользователь
-        existing_user = users.query.filter_by(name=name).first()
+        existing_user = User.query.filter_by(name=name).first()
         if existing_user:
             return jsonify({"success": False, "message": "Пользователь с таким именем уже существует!"}), 400
 
         # Создание и добавление нового пользователя
-        new_user = users(name, password)
+        new_user = User(name, password)
         db.session.add(new_user)
         db.session.commit()
 
@@ -67,7 +67,7 @@ def register_routes(app):
 
 
         # Проверяем, есть ли пользователь с таким именем и паролем
-        existing_user = users.query.filter_by(name=name, password=password).first()
+        existing_user = User.query.filter_by(name=name, password=password).first()
         if existing_user:
             # Успешный вход
             session['user_id'] = existing_user._id  # сохраняем ID в сессию
@@ -171,7 +171,7 @@ def register_routes(app):
 
     @app.route("/getUserList", methods=["GET"])
     def getUserList():
-        userList = users.query.all()
+        userList = User.query.all()
         users_data = []
 
         # Преобразуем список объектов в список словарей
@@ -184,11 +184,11 @@ def register_routes(app):
 
     @app.route('/admin')
     def admin():
-        users_list = users.query.all()
+        users_list = User.query.all()
         chat_list = Chat.query.all()
         message_list = Message.query.all()
-        Message.query.delete()
+        # Message.query.delete()
         # Chat.query.delete()
-        # users.query.delete()
+        # User.query.delete()
         db.session.commit()
         return render_template("Users.html", users=users_list, chats=chat_list, messages=message_list)

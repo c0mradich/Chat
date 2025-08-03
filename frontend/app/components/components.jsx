@@ -39,7 +39,7 @@ export function User_List({FilteredUsers, handleUserClick}){
     )
 }
 
-export function Messages({ messages, name, handleSendMessage }) {
+export function Messages({ messages, name, handleSendMessage,  setNewMessage, setEditingMsgId}) {
   const [open, setOpen] = useState(false);
   const [selectedMsg, setSelectedMsg] = useState(null);
 
@@ -54,15 +54,19 @@ export function Messages({ messages, name, handleSendMessage }) {
   }
 
   function handleDelete() {
-    handleSendMessage({selectedMsg}, 'delete_msg')
-    console.log("Удалить сообщение:", selectedMsg);
-    // TODO: Твоя логика удаления
+    if(name===selectedMsg.sender){
+      handleSendMessage({selectedMsg}, 'delete_msg')
+      console.log("Удалить сообщение:", selectedMsg);
+    }
     handleClosePopup();
   }
 
   function handleEdit() {
-    console.log("Редактировать сообщение:", selectedMsg);
-    // TODO: Твоя логика редактирования
+    if(name===selectedMsg.sender){
+      console.log("Редактировать сообщение:", selectedMsg);
+      setEditingMsgId(selectedMsg.id)
+      setNewMessage(selectedMsg.text)
+    }
     handleClosePopup();
   }
 
@@ -113,7 +117,6 @@ export function Messages({ messages, name, handleSendMessage }) {
             className={`message ${isMe ? 'sent' : 'received'}`}
             onClick={() => handleOpenPopup(msg)}
             style={{ cursor: 'pointer' }}
-            data-id={msg.id}
           >
             <div className="message-sender">{displayName}</div>
             {msg.content ? renderContent(msg) : (
@@ -146,10 +149,17 @@ export function ChatHeader({currentUser}){
     )
 }
 
-export function InputField({ newMessage, setNewMessage, handleSendMessage }) {
+export function InputField({ newMessage, setNewMessage, handleSendMessage, editingMsgId, setEditingMsgId }) {
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && newMessage.trim()) {
-      handleSendMessage(newMessage, 'send_message');
+      if (editingMsgId !== null) {
+        // редактирование
+        handleSendMessage({ id: editingMsgId, text: newMessage }, 'edit_msg');
+        setEditingMsgId(null);  // сбрасываем режим редактирования
+      } else {
+        // обычное сообщение
+        handleSendMessage(newMessage, 'send_message');
+      }
       setNewMessage('');
     }
   };
@@ -164,6 +174,7 @@ export function InputField({ newMessage, setNewMessage, handleSendMessage }) {
     />
   );
 }
+
 export function InputButtons({ newMessage, setNewMessage, handleSendMessage, }) {
   const [micStream, setMicStream] = useState(null);
   const [micRecorder, setMicRecorder] = useState(null);

@@ -20,12 +20,19 @@ function Home() {
   const [FilteredUsers, setFilteredUsers] = useState([])
   const [chatId, setChatId] = useState(null)
   const handleUserClick = useHandleUserClick(setCurrentUser)
+  const [editingMsgId, setEditingMsgId] = useState(null);
 // после всех useState:
 const { sendMessage: wsSendMessage } = useChat(
   chatId,
   name,
   (msg) => setMessages(prev => [...prev, msg]),
-  (id) => setMessages(prev => prev.filter(msg => msg.id !== id))
+  (id) => setMessages(prev => prev.filter(msg => msg.id !== id)),
+  (msg) => setMessages(prev => {
+    return prev.map(m => 
+      m.id === msg.id ? { ...m, text: msg.text } : m
+    )
+  }
+  )
 );
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз
@@ -81,13 +88,16 @@ useEffect(() => {
        {currentUser && (
       <div className="chat-area">
       <ChatHeader currentUser={currentUser}/>
-      <Messages messages={messages} name={name} handleSendMessage={wsSendMessage}/>
+      <Messages messages={messages} name={name} handleSendMessage={wsSendMessage} setNewMessage={setNewMessage} setEditingMsgId={setEditingMsgId}/>
         <div className="chat-input">
       <InputField
         newMessage={newMessage}
         setNewMessage={setNewMessage}
         handleSendMessage={wsSendMessage}
+        editingMsgId={editingMsgId}
+        setEditingMsgId={setEditingMsgId}
       />
+
       <InputButtons
         newMessage={newMessage}
         setNewMessage={setNewMessage}
