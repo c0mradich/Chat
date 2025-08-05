@@ -64,6 +64,9 @@ def register_routes(app):
         data = request.get_json()  # Получаем данные в формате JSON
         name = data.get('name')
         password = data.get('password')
+        current_user = User.query.filter_by(name=name).first()
+        current_user.isActive = True
+        db.session.commit()
 
 
         # Проверяем, есть ли пользователь с таким именем и паролем
@@ -208,6 +211,18 @@ def register_routes(app):
                 "name": user.name,
             })
         return users_data
+    
+    @app.route("/leave", methods=["POST"])
+    def leave():
+        data = request.get_json()
+        name = data.get("name")
+        user = User.query.filter_by(name=name).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        user.isActive = False
+        db.session.commit()
+        return jsonify({"message": f"User {name} marked as inactive"}), 200
+
 
     @app.route('/admin')
 

@@ -9,6 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(100), nullable=False)
     messages = db.relationship('Message', back_populates='sender', lazy=True)
+    isActive = db.Column(db.Boolean, default=False)
 
     def __init__(self, name, password):
         self.name = name

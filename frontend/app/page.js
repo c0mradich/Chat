@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import './css/chat.css'; // Импорт стилей
-import { Progress, ChatHeader, redirect} from './components/components';
+import { Progress, ChatHeader, redirect, leave} from './components/components';
 import { Sidebar, User_List, filteredUsers, useHandleUserClick, fetchUsers } from "./components/Input/Sidebar"
 import {Messages} from "./components/Input/Messsages"
 import { InputField } from './components/Input/InputField';
@@ -86,6 +86,14 @@ useEffect(() => {
     setMessages(history);
   })();
 }, [chatId]);
+
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    // Лучше использовать sendBeacon, чтобы сервер точно получил уведомление
+    navigator.sendBeacon('/api/leave', JSON.stringify({ name }));
+  });
+}
 
 
   return (
