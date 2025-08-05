@@ -1,11 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import './css/chat.css'; // Импорт стилей
-import { getId, filteredUsers, redirect, fetchUsers, handleSendMessage, handleKeyDown, useHandleUserClick} from './components/utils';
-import { Progress, Sidebar, User_List, Messages, ChatHeader, InputField, InputButtons} from './components/components';
-import { fetchMessages } from './components/fetchMessages';
-import { fetchChatId } from './components/fetchChatId';
-import { useChat } from './components/useChat';
+import { Progress, ChatHeader, redirect} from './components/components';
+import { Sidebar, User_List, filteredUsers, useHandleUserClick, fetchUsers } from "./components/Input/Sidebar"
+import {Messages} from "./components/Input/Messsages"
+import { InputField } from './components/Input/InputField';
+import {InputButtons} from "./components/Input/InputfButtons"
+import { fetchMessages } from './components/Backend/fetchMessages';
+import { fetchChatId } from './components/Backend/fetchChatId';
+import { useChat } from './components/Backend/useChat';
 
 function Home() {
   const [name, setName] = useState(null)
@@ -15,31 +18,29 @@ function Home() {
   const [users, setUsers] = useState([]); // Список пользователей
   const [loading, setLoading] = useState(true); // Для отслеживания загрузки
   const [error, setError] = useState(null); // Для отслеживания ошибки
-  const [currentUser, setCurrentUser] = useState(null); // Текущий собеседник
+  const [currentChat, setCurrentChat] = useState(null); // Текущий чат
   const [data, setData] = useState(null)
   const [FilteredUsers, setFilteredUsers] = useState([])
   const [chatId, setChatId] = useState(null)
-  const handleUserClick = useHandleUserClick(setCurrentUser)
+  const handleUserClick = useHandleUserClick(setCurrentChat)
   const [editingMsgId, setEditingMsgId] = useState(null);
+  const [chatsInfo, setChatsInfo] = useState([])
+  const [currentChatInfo, setCurrentChatInfo] = useState({})
 // после всех useState:
 const { sendMessage: wsSendMessage } = useChat(
   chatId,
   name,
   (msg) => setMessages(prev => [...prev, msg]),
   (id) => setMessages(prev => prev.filter(msg => msg.id !== id)),
-  (msg) => setMessages(prev => {
-    return prev.map(m => 
-      m.id === msg.id ? { ...m, text: msg.text } : m
-    )
-  }
-  )
-);
+  (msg) => setMessages(prev => {return prev.map(m => m.id === msg.id ? { ...m, text: msg.text } : m)}),
+  setUsers, setLoading, setChatsInfo
+)
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз
 useEffect(() => {
   async function checkAuthAndFetch() {
-    await redirect(setName);
-    fetchUsers('http://localhost:5000/getUserList', setData, setUsers, setCurrentUser, setError, setLoading, name);
+    const user_name = await redirect(setName);
+    fetchUsers('http://localhost:5000/getUserList', setData, setUsers, setCurrentChat, setError, setLoading, user_name, wsSendMessage);
   }
   checkAuthAndFetch();
 }, []);
@@ -53,26 +54,35 @@ useEffect(() => {
 // 3) Установка текущего пользователя при обновлении фильтрованных пользователей
 useEffect(() => {
   if (FilteredUsers.length > 0) {
-    setCurrentUser(FilteredUsers[0].name);
+    const selectedName = FilteredUsers[0].name;
+    setCurrentChat(selectedName);
+
+    const info = users.filter(x => {
+      return x.name === selectedName; // теперь вернёт true/false
+    });
+
+    setCurrentChatInfo(info.length > 0 ? info[0] : null);
   } else {
-    setCurrentUser(null);
+    setCurrentChat(null);
+    setCurrentChatInfo(null);
   }
 }, [FilteredUsers]);
 
+
 useEffect(() => {
   async function loadChat() {
-    if (!name || !currentUser) return;
-    const id = await fetchChatId(name, currentUser);
+    if (!name || !currentChat) return;
+    const id = await fetchChatId(name, currentChat, currentChatInfo);
     if (id) setChatId(id);
   }
   loadChat();
-}, [currentUser, name]);
+}, [currentChat, name]);
 
 useEffect(() => {
   if (!chatId) return;
   (async () => {
     const history = await fetchMessages(chatId);
-    console.log(history)
+    // console.log(history)
     setMessages(history);
   })();
 }, [chatId]);
@@ -82,12 +92,13 @@ useEffect(() => {
     <div className="chat-container">
       <Progress loading={loading} error={error} />
       <div className="sidebar">
-      <Sidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      <User_List FilteredUsers={FilteredUsers} handleUserClick={handleUserClick} />
+      <Sidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} users={users} handleSendMessage={wsSendMessage} name={name}/>
+
+      <User_List FilteredUsers={FilteredUsers} setCurrentChat={setCurrentChat} chatsInfo={users} setCurrentChatInfo={setCurrentChatInfo} chatId={chatId} name={name}/>
       </div>
-       {currentUser && (
+       {currentChat && (
       <div className="chat-area">
-      <ChatHeader currentUser={currentUser}/>
+      <ChatHeader currentChat={currentChat}/>
       <Messages messages={messages} name={name} handleSendMessage={wsSendMessage} setNewMessage={setNewMessage} setEditingMsgId={setEditingMsgId}/>
         <div className="chat-input">
       <InputField

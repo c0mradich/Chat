@@ -32,6 +32,7 @@ body {
   background-color: #2a2a2a;
   padding: 20px;
   border-radius: 8px 0 0 8px;
+  
 }
 
 .search-input {
@@ -45,6 +46,10 @@ body {
 
 .search-input::placeholder {
   color: #888;
+}
+
+.search-container{
+  display: flex;
 }
 
 .user-list {
@@ -200,4 +205,3 @@ body {
 .file-upload input[type="file"] {
   display: none;
 }
-

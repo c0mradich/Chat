@@ -1,6 +1,6 @@
 from flask import request, jsonify, session, render_template
 from stuff import db
-from stuff.db import User, Chat, Message
+from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import get_or_create_chat
 import base64, os
 
@@ -79,49 +79,76 @@ def register_routes(app):
 
     @app.route("/me")
     def me():
-        if 'user_id' in session:
-            print(200)
-            return jsonify({
-                "user_id": session['user_id'],
-                "username": session['username']
-            })
-        else:
-            print(401)
-            return jsonify({"error": "Не авторизован"}), 401
+        try:
+            if 'user_id' in session:
+                user = User.query.get(session['user_id'])  # быстрее и безопаснее, чем filter_by
+                if user:
+                    return jsonify({
+                        "user_id": user._id,
+                        "username": user.name
+                    })
+                else:
+                    # юзер не найден в базе, очищаем сессию на всякий случай
+                    session.clear()
+                    return jsonify({"error": "Пользователь не найден"}), 404
+            else:
+                return jsonify({"error": "Не авторизован"}), 401
+        except Exception as e:
+            print(f"Ошибка в /me: {e}")
+            return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
 
     @app.route('/get_or_create_chat', methods=['POST'])
     def get_chat():
         data = request.get_json()
         sender = data.get('sender')
-        recipient = data.get('recipient')
+        chat_name = data.get('name')
+        chat_info = data.get('chatInfo')
 
-        if not sender or not recipient:
-            return jsonify({'error': 'Missing sender or recipient'}), 400
+        if not sender or not chat_name or not chat_info:
+            return jsonify({'error': 'Missing sender, name, or chatInfo'}), 400
 
-        chat_id = get_or_create_chat(sender, recipient, Chat, db)
+        chat_id = chat_info.get('id')
+
+        if chat_id is None:
+            print(chat_info)
+            # Создаем новый чат, если id не передан
+            chat_id = get_or_create_chat(chat_info['chatParticipants'][0], chat_info['chatParticipants'][1], db, Chat, ChatParticipant, User, chat_info)
+
+            if chat_id is None:
+                return jsonify({'error': 'Failed to create chat'}), 500
+
         return jsonify({'chat_id': chat_id})
+
+
 
     @app.route('/send_message', methods=['POST'])
     def send_msg():
         try:
             data = request.get_json()
-            sender = data.get('sender')
+            sender_name = data.get('sender')
             chat_id = data.get('chat_id')
             text = data.get('text')
 
-            if sender is None or chat_id is None:
-                return jsonify({"error": "Missing sender or chat_id"}), 400
+            if not sender_name or chat_id is None or not text:
+                return jsonify({"error": "Missing sender, chat_id or text"}), 400
 
-            if text:
-                msg = Message(chat_id=chat_id, sender=sender, text=text)
-                db.session.add(msg)
-                db.session.commit()
+            # Получаем пользователя по имени
+            user = User.query.filter_by(name=sender_name).first()
+            if not user:
+                return jsonify({"error": "Пользователь не найден"}), 400
+
+            # Создаём сообщение с sender_id
+            msg = Message(chat_id=chat_id, sender_id=user._id, text=text)
+            db.session.add(msg)
+            db.session.commit()
 
             return jsonify({"success": True, "message": "Сообщение отправлено"})
 
         except Exception as e:
             print("🔥 Ошибка в /send_message:", e)
             return jsonify({"error": str(e)}), 500
+
 
 
     @app.route('/get_messages/<int:chat_id>', methods=['GET'])
@@ -133,8 +160,8 @@ def register_routes(app):
             messages_data = []
             for msg in messages:
                 msg_dict = {
-                    "id": msg.id,
-                    "sender": msg.sender,
+                    "id": msg._id,
+                    "sender": msg.sender.name,
                     "text": msg.text,
                     "timestamp": msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 }
@@ -183,12 +210,35 @@ def register_routes(app):
         return users_data
 
     @app.route('/admin')
+
     def admin():
         users_list = User.query.all()
-        chat_list = Chat.query.all()
         message_list = Message.query.all()
+        chats_raw = Chat.query.all()
+
+        # ChatParticipant.query.delete()
         # Message.query.delete()
         # Chat.query.delete()
         # User.query.delete()
-        db.session.commit()
-        return render_template("Users.html", users=users_list, chats=chat_list, messages=message_list)
+        # db.session.commit()
+        #session.clear()
+        
+        chats = []
+        for chat in chats_raw:
+            participant_names = []
+            for p in chat.participants:
+                if p.user:
+                    participant_names.append(p.user.name)
+                else:
+                    print(f"Warning: ChatParticipant {p._id} has no valid user")
+
+            chats.append({
+                "id": chat._id,
+                "name": chat.name,
+                "is_group": chat.is_group,
+                "creator_id": chat.creator_id,
+                "participants": participant_names
+            })
+
+        return render_template("Users.html", users=users_list, chats=chats, messages=message_list)
+

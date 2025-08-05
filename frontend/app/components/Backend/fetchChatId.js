@@ -1,9 +1,9 @@
-export async function fetchChatId(user1, user2) {
+export async function fetchChatId(name, user1, currentChatInfo) {
   try {
     const response = await fetch('http://localhost:5000/get_or_create_chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: user1, recipient: user2 }),
+      body: JSON.stringify({ sender: name, name: user1, chatInfo: currentChatInfo }),
       credentials: 'include',
     });
 
