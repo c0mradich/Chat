@@ -2,38 +2,14 @@ from flask import request, jsonify, session, render_template
 from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import get_or_create_chat
+from Python_Utils.mime import get_mime_type_from_extension
+from flask_socketio import emit
+#import redis
 import base64, os
 
-def get_mime_type_from_extension(ext):
-    ext = ext.lower()
-    mime_types = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.ico': 'image/x-icon',
-        '.svg': 'image/svg+xml',
-        '.mp3': 'audio/mpeg',
-        '.ogg': 'audio/ogg',
-        '.oga': 'audio/ogg',  # Доп. расширение OGG
-        '.webm': 'audio/webm',
-        '.wav': 'audio/wav',
-        '.mp4': 'video/mp4',
-        '.mov': 'video/quicktime',
-        '.avi': 'video/x-msvideo',
-        '.mkv': 'video/x-matroska',
-        '.pdf': 'application/pdf',
-        '.zip': 'application/zip',
-        '.txt': 'text/plain',
-        '.html': 'text/html',
-        '.css': 'text/css',
-        '.js': 'application/javascript',
-    }
-    return mime_types.get(ext, 'application/octet-stream')
+# r = redis.Redis(host='localhost', port=6379)
 
-
-def register_routes(app):
+def register_routes(app, socketio):
     @app.route('/')
     def home():
         return "You are welcome!"
@@ -49,14 +25,28 @@ def register_routes(app):
         # Проверка, существует ли пользователь
         existing_user = User.query.filter_by(name=name).first()
         if existing_user:
-            return jsonify({"success": False, "message": "Пользователь с таким именем уже существует!"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Пользователь с таким именем уже существует!"
+            }), 400
 
         # Создание и добавление нового пользователя
         new_user = User(name, password)
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({"success": True, "message": "Пользователь успешно зарегистрирован!"})
+        # Уведомление всех по сокету
+        socketio.emit("add_user", { "name": name })
+
+        # Возвращаем ответ клиенту
+        return jsonify({
+            "success": True,
+            "message": "Пользователь успешно зарегистрирован!",
+            "user": { "name": name }
+        }), 200
+
+
+
 
 
     @app.route("/login", methods=["POST"])
@@ -64,14 +54,14 @@ def register_routes(app):
         data = request.get_json()  # Получаем данные в формате JSON
         name = data.get('name')
         password = data.get('password')
-        current_user = User.query.filter_by(name=name).first()
-        current_user.isActive = True
-        db.session.commit()
+        current_user = User.query.filter_by(name=name, isActive=False).first()
 
 
         # Проверяем, есть ли пользователь с таким именем и паролем
         existing_user = User.query.filter_by(name=name, password=password).first()
         if existing_user:
+            current_user.isActive = True
+            db.session.commit()
             # Успешный вход
             session['user_id'] = existing_user._id  # сохраняем ID в сессию
             session['username'] = existing_user.name
@@ -84,8 +74,10 @@ def register_routes(app):
     def me():
         try:
             if 'user_id' in session:
-                user = User.query.get(session['user_id'])  # быстрее и безопаснее, чем filter_by
+                user = User.query.get(session['user_id']) 
                 if user:
+                    user.isActive = True
+                    db.session.commit()
                     return jsonify({
                         "user_id": user._id,
                         "username": user.name
@@ -123,37 +115,6 @@ def register_routes(app):
 
         return jsonify({'chat_id': chat_id})
 
-
-
-    @app.route('/send_message', methods=['POST'])
-    def send_msg():
-        try:
-            data = request.get_json()
-            sender_name = data.get('sender')
-            chat_id = data.get('chat_id')
-            text = data.get('text')
-
-            if not sender_name or chat_id is None or not text:
-                return jsonify({"error": "Missing sender, chat_id or text"}), 400
-
-            # Получаем пользователя по имени
-            user = User.query.filter_by(name=sender_name).first()
-            if not user:
-                return jsonify({"error": "Пользователь не найден"}), 400
-
-            # Создаём сообщение с sender_id
-            msg = Message(chat_id=chat_id, sender_id=user._id, text=text)
-            db.session.add(msg)
-            db.session.commit()
-
-            return jsonify({"success": True, "message": "Сообщение отправлено"})
-
-        except Exception as e:
-            print("🔥 Ошибка в /send_message:", e)
-            return jsonify({"error": str(e)}), 500
-
-
-
     @app.route('/get_messages/<int:chat_id>', methods=['GET'])
     def get_messages(chat_id):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -187,7 +148,6 @@ def register_routes(app):
                             # Добавляем content
                             msg_dict['content'] = data_url
 
-
                 messages_data.append(msg_dict)
 
             return jsonify({"messages": messages_data}), 200
@@ -195,9 +155,6 @@ def register_routes(app):
         except Exception as e:
             print("Ошибка при получении сообщений:", e)
             return jsonify({"error": "Internal server error"}), 500
-
-
-
 
     @app.route("/getUserList", methods=["GET"])
     def getUserList():
@@ -223,7 +180,6 @@ def register_routes(app):
         db.session.commit()
         return jsonify({"message": f"User {name} marked as inactive"}), 200
 
-
     @app.route('/admin')
 
     def admin():
@@ -237,6 +193,7 @@ def register_routes(app):
         # User.query.delete()
         # db.session.commit()
         #session.clear()
+        #r.flushdb()
         
         chats = []
         for chat in chats_raw:
@@ -256,4 +213,3 @@ def register_routes(app):
             })
 
         return render_template("Users.html", users=users_list, chats=chats, messages=message_list)
-

@@ -45,9 +45,3 @@ export function ChatHeader({currentChat}){
         </div>
     )
 }
-
-// export function handleKeyDown (target, messages, newMessage, setMessages, setNewMessage, handleSendMessage, chatId, name) {
-//   if (target.key === 'Enter') {
-//     handleSendMessage(messages, newMessage, setMessages, setNewMessage, name, chatId); // Отправка сообщения при нажатии Enter
-//   }
-// };

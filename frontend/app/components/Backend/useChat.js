@@ -12,7 +12,7 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
 
     socketRef.current.on('connect', () => {
       // 2) Входим в комнату
-      socketRef.current.emit('join', { chat_id: chatId });
+      socketRef.current.emit('join', { chat_id: chatId, name: name });
     });
 
     // 3) Слушаем входящие
@@ -26,6 +26,17 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
     socketRef.current.on('edit_msg', (msg)=>{
       onEditMessage(msg)
     })
+
+
+socketRef.current.on("add_user", (msg)=>{
+  const user = {
+    name: msg.name,
+    isGroup: false,
+    chatParticipants: [msg.name, name]
+  }
+  setUsers(prev=>[...prev, user])
+  setChatsInfo(prev=>[...prev, user])
+})
 
 
 socketRef.current.on('get_user_chats', (msg) => {
@@ -49,15 +60,15 @@ socketRef.current.on('get_user_chats', (msg) => {
       chatParticipants: chat.participants
     });
   }
-  setUsers(arr)
-  setChatsInfo(arr)
+  setUsers(prev=>[...prev, ...arr])
+  setChatsInfo(prev=>[...prev, ...arr])
   setLoading(false);
 });
 
 
     return () => {
       // 4) Очищаем
-      socketRef.current.emit('leave', { chat_id: chatId });
+      socketRef.current.emit('leave', { chat_id: chatId, name: name });
       socketRef.current.disconnect();
     };
   }, [chatId]);

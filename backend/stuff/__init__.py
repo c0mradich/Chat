@@ -1,5 +1,3 @@
-# stuff/__init__.py
-
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
@@ -30,4 +28,4 @@ db.init_app(app)
 
 socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000", async_mode='eventlet')
 register_socket_handlers(socketio)
-register_routes(app)
+register_routes(app, socketio)

@@ -4,8 +4,10 @@ from .db import db, Message, User, ChatParticipant, Chat
 import hashlib, os
 from datetime import datetime
 import base64
-from .routes import get_mime_type_from_extension
+from Python_Utils.mime import get_mime_type_from_extension
+import redis
 
+r = redis.Redis(host='localhost', port=6379)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
@@ -30,6 +32,14 @@ def register_socket_handlers(socketio):
 
     @socketio.on('join')
     def on_join(data):
+        try:
+            name = data['name']
+            r.set(f'user:{name}', request.sid)
+            sid_bytes = r.get(f'user:{name}')
+            print(sid_bytes.decode('utf-8'))
+        except:
+            print("poh")
+
         chat_id = data['chat_id']
         join_room(chat_id)
         print(f"{request.sid} joined room {chat_id}")
@@ -37,6 +47,8 @@ def register_socket_handlers(socketio):
     @socketio.on('leave')
     def on_leave(data):
         chat_id = data['chat_id']
+        name = data["name"]
+        r.delete(name)
         leave_room(chat_id)
         print(f"{request.sid} left room {chat_id}")
 
@@ -250,9 +262,20 @@ def register_socket_handlers(socketio):
 
         print(f"Группа '{chatname}' успешно создана с участниками: {participants_names}")
 
-        # emit('get_user_chats', {
-            
-        # })
+        chat_info = {
+            "id": new_chat._id,
+            "name": chatname,
+            "is_group": True,
+            "chatParticipants": list(participants_names)
+        }
+
+        for user_name in participants_names:
+            sid = r.get(f'user:{user_name}')
+            if sid:
+                sid_str = sid.decode() if isinstance(sid, bytes) else sid
+                emit('get_user_chats', {"chats": [chat_info], "name": user_name}, to=sid_str)
+            else:
+                print(f"Пользователь {user_name} оффлайн или sid не найден в Redis")
 
         @socketio.on("add_user")
         def add_user_to_group(data):
