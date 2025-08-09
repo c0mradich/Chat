@@ -13,7 +13,13 @@ CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://local
 app.secret_key = "YOUR_SECRET_KEY"
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, '..','..', 'instance', 'users.sqlite3')
+
+db_dir = os.path.join(basedir, '..', '..', 'instance')
+if not os.path.exists(db_dir):
+    os.makedirs(db_dir, exist_ok=True)
+
+db_path = os.path.join(db_dir, 'users.sqlite3')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
