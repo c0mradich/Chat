@@ -36,7 +36,7 @@ def register_routes(app, socketio):
         db.session.commit()
 
         # Уведомление всех по сокету
-        socketio.emit("add_user", { "name": name })
+        socketio.emit("add_user", { "name": name, "id": existing_user._id })
 
         # Возвращаем ответ клиенту
         return jsonify({

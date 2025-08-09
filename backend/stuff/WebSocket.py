@@ -46,11 +46,21 @@ def register_socket_handlers(socketio):
 
     @socketio.on('leave')
     def on_leave(data):
-        chat_id = data['chat_id']
-        name = data["name"]
+        chat_id = data.get('chat_id')
+        name = data.get('name')
+
+        if not name:
+            print("Ошибка: 'name' отсутствует в данных leave")
+            return  # Или как-то иначе обработать
+
+        if not chat_id:
+            print("Ошибка: 'chat_id' отсутствует в данных leave")
+            return
+
         r.delete(name)
         leave_room(chat_id)
         print(f"{request.sid} left room {chat_id}")
+
 
     @socketio.on('send_message')
     def handle_send_message(data):
@@ -277,6 +287,40 @@ def register_socket_handlers(socketio):
             else:
                 print(f"Пользователь {user_name} оффлайн или sid не найден в Redis")
 
-        @socketio.on("add_user")
-        def add_user_to_group(data):
-            print(data)
+    @socketio.on("add_user_to_group")
+    def add_user_to_group(data):
+        print(data)
+        users = data['text']['users']  # список имён пользователей
+        chat_id = data['chat_id']
+        participants_names = data['text']['participants']
+        chatname = Chat.query.get(chat_id).name
+
+        chat_info = {
+            "id": chat_id,
+            "name": chatname,
+            "is_group": True,
+            "chatParticipants": list(participants_names)
+        }
+
+        for user_name in users:
+            existing_user = User.query.filter_by(name=user_name).first()
+            if existing_user is None:
+                print(f"Ошибка: пользователь {user_name} не найден")
+                continue  # или return, в зависимости от логики
+            user_id = existing_user._id
+
+            # Проверка, что пользователь не в чате — лишней не будет
+            already_in_chat = ChatParticipant.query.filter_by(chat_id=chat_id, user_id=user_id).first()
+            if already_in_chat:
+                print(f"Пользователь {user_name} уже в чате {chat_id}")
+                continue
+
+            db.session.add(ChatParticipant(chat_id=chat_id, user_id=user_id))
+            sid = r.get(f'user:{user_name}')
+            if sid:
+                sid_str = sid.decode() if isinstance(sid, bytes) else sid
+                emit('get_user_chats', {"chats": [chat_info], "name": user_name}, to=sid_str)
+            else:
+                print(f"Пользователь {user_name} оффлайн или sid не найден в Redis")
+                
+            db.session.commit()
