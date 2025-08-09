@@ -31,6 +31,7 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
 socketRef.current.on("add_user", (msg)=>{
   const user = {
     name: msg.name,
+    id: msg.id,
     isGroup: false,
     chatParticipants: [msg.name, name]
   }
@@ -40,7 +41,6 @@ socketRef.current.on("add_user", (msg)=>{
 
 
 socketRef.current.on('get_user_chats', (msg) => {
-  console.warn(msg.chats);
   const arr = [];
   const currentUserName = msg.name
 
@@ -74,11 +74,11 @@ socketRef.current.on('get_user_chats', (msg) => {
   }, [chatId]);
 
   // Функция для отправки
-  const sendMessage = (text,path) => {
+  const sendMessage = (text, path) => {
     socketRef.current.emit(path, {
       chat_id: chatId,
       sender: name,
-      text,
+      text
     });
   };
 

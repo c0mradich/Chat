@@ -2,13 +2,12 @@ import { useState } from "react";
 import { MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function OptionsMenu({ users, handleSendMessage, name, chatId }) {
+export default function OptionsMenu({ users, handleSendMessage, name, currentChatInfo }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [chatName, setChatName] = useState("");
-
     const resetState = () => {
     setShowCreateGroupModal(false);
     setShowAddUserModal(false);
@@ -18,7 +17,6 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
   };
 
   const toggleUser = (userName) => {
-    console.log(userName)
     setSelectedUsers((prev) =>
       prev.includes(userName)
         ? prev.filter((name) => name !== userName)
@@ -35,12 +33,14 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
   };
 
   const handleAddUser = () => {
-    console.warn(selectedUsers)
-    if (selectedUsers.length > 0) {
-      handleSendMessage({ chat: chatId,  users: selectedUsers }, "add_user");
+    console.log(currentChatInfo)
+    if (selectedUsers.length > 0 && currentChatInfo?.id) {
+      handleSendMessage({ users: selectedUsers, chat_id: currentChatInfo.id, participants: currentChatInfo.chatParticipants}, "add_user_to_group");
+      console.log("Отправил add_user с чат айди");
     }
     resetState();
   };
+
 
   return (
     <div className="relative inline-block text-left">
@@ -76,11 +76,10 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
 
               <button
                 onClick={() => {
-                  setShowAddUserModal(true);
+                  currentChatInfo.isGroup && setShowAddUserModal(true);
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl mt-1"
-              >
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl mt-1">
                 Add User
               </button>
             </div>
@@ -124,7 +123,8 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
                       <input
                         type="checkbox"
                         checked={selectedUsers.includes(user.name)}
-                        onChange={() => toggleUser(user.name)}
+                        onChange={() => {
+                          toggleUser(user.name)}}
                         className="accent-blue-500"
                       />
                       <span>{user.name}</span>
@@ -170,7 +170,11 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
 
               <div className="max-h-40 overflow-y-auto mb-4">
                 {users
-                  .filter((user) => user.name !== name && !user.isGroup)
+                  .filter((user) => 
+                    user.name !== name &&
+                    !user.isGroup &&
+                    !currentChatInfo.chatParticipants?.includes(user.name)
+                  )
                   .map((user) => (
                     <label
                       key={user.id}
@@ -178,13 +182,14 @@ export default function OptionsMenu({ users, handleSendMessage, name, chatId }) 
                     >
                       <input
                         type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => toggleUser(user.id)}
+                        checked={selectedUsers.includes(user.name)}
+                        onChange={() => toggleUser(user.name)}
                         className="accent-blue-500"
                       />
                       <span>{user.name}</span>
                     </label>
                   ))}
+
               </div>
 
               <div className="flex justify-end space-x-2">

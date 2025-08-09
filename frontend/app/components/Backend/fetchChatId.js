@@ -1,4 +1,4 @@
-export async function fetchChatId(name, user1, currentChatInfo) {
+async function fetchChatId(name, user1, currentChatInfo) {
   try {
     const response = await fetch('http://localhost:5000/get_or_create_chat', {
       method: 'POST',
@@ -13,7 +13,9 @@ export async function fetchChatId(name, user1, currentChatInfo) {
     return data.chat_id;
 
   } catch (error) {
-    console.error("Ошибка получения chat_id:", error);
+    console.warn("Ошибка получения chat_id:", error);
     return null;
   }
 }
+
+export default fetchChatId

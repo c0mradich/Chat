@@ -1,8 +1,8 @@
 import OptionsMenu from "../Backend/group_chat"
-import { fetchChatId } from "../Backend/fetchChatId";
+import  fetchChatId  from "../Backend/fetchChatId";
 import { useCallback } from "react";
 
-export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name }){
+export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, chatId, currentChatInfo }){
     return (
         <div className="search-container">
           <input
@@ -12,7 +12,7 @@ export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <OptionsMenu users={users} handleSendMessage={handleSendMessage} name={name}/>
+          <OptionsMenu users={users} handleSendMessage={handleSendMessage} name={name}  currentChatInfo={currentChatInfo}/>
         </div>
     )
 }
@@ -24,7 +24,6 @@ export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrent
 
     if (user.id === null) {
       user.id = await fetchChatId(name, user.name, chat);
-      console.warn(user.id)
     }
 
     chat && setCurrentChatInfo(chat);
@@ -60,27 +59,6 @@ export function useHandleUserClick(setCurrentUser) {
   }, [setCurrentUser]);
 }
 
-  export async function fetchUsers (url, setData, setUsers, setCurrentChat, setError, setLoading, name, handleSendMessage) {
+  export async function fetchUsers (name, handleSendMessage) {
           handleSendMessage({"name":name}, 'get_userlist')
-    // try {
-    //   const response = await fetch(url);
-    //   if (!response.ok) {
-    //     throw new Error('Failed to fetch users');
-    //   }
-
-    //   const fetchedData = await response.json();
-    //   setData(fetchedData);
-    //   setUsers(fetchedData);
-
-    //   if (fetchedData.length > 0 && fetchedData[0].name!==name) {
-    //     setCurrentChat(fetchedData[0].name);
-    //   } else {
-    //     setCurrentChat(null);
-    //   }
-
-    //   setLoading(false);
-    // } catch (error) {
-    //   setError(error.message);
-    //   setLoading(false);
-    // }
   };

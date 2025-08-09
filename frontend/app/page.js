@@ -7,7 +7,7 @@ import {Messages} from "./components/Input/Messsages"
 import { InputField } from './components/Input/InputField';
 import {InputButtons} from "./components/Input/InputfButtons"
 import { fetchMessages } from './components/Backend/fetchMessages';
-import { fetchChatId } from './components/Backend/fetchChatId';
+import fetchChatId from './components/Backend/fetchChatId';
 import { useChat } from './components/Backend/useChat';
 
 function Home() {
@@ -40,7 +40,7 @@ const { sendMessage: wsSendMessage } = useChat(
 useEffect(() => {
   async function checkAuthAndFetch() {
     const user_name = await redirect(setName);
-    fetchUsers('http://localhost:5000/getUserList', setData, setUsers, setCurrentChat, setError, setLoading, user_name, wsSendMessage);
+    fetchUsers(user_name, wsSendMessage);
   }
   checkAuthAndFetch();
 }, []);
@@ -90,8 +90,7 @@ useEffect(() => {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    // Лучше использовать sendBeacon, чтобы сервер точно получил уведомление
-    navigator.sendBeacon('/api/leave', JSON.stringify({ name }));
+    navigator.sendBeacon('http://localhost:5000/leave', JSON.stringify({ name }));
   });
 }
 
@@ -100,14 +99,38 @@ if (typeof window !== 'undefined') {
     <div className="chat-container">
       <Progress loading={loading} error={error} />
       <div className="sidebar">
-      <Sidebar searchQuery={searchQuery} setSearchQuery={setSearchQuery} users={users} handleSendMessage={wsSendMessage} name={name}/>
 
-      <User_List FilteredUsers={FilteredUsers} setCurrentChat={setCurrentChat} chatsInfo={users} setCurrentChatInfo={setCurrentChatInfo} chatId={chatId} name={name}/>
+      <Sidebar 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery} 
+        users={users} 
+        handleSendMessage={wsSendMessage} 
+        name={name}
+        chatId={chatId}
+        currentChatInfo={currentChatInfo}
+      />
+
+      <User_List 
+        FilteredUsers={FilteredUsers} 
+        setCurrentChat={setCurrentChat} 
+        chatsInfo={users} 
+        setCurrentChatInfo={setCurrentChatInfo} 
+        chatId={chatId} 
+        name={name}
+      />
+
       </div>
        {currentChat && (
       <div className="chat-area">
       <ChatHeader currentChat={currentChat}/>
-      <Messages messages={messages} name={name} handleSendMessage={wsSendMessage} setNewMessage={setNewMessage} setEditingMsgId={setEditingMsgId}/>
+      <Messages 
+        messages={messages}
+        name={name} 
+        handleSendMessage={wsSendMessage} 
+        setNewMessage={setNewMessage} 
+        setEditingMsgId={setEditingMsgId}
+      />
+
         <div className="chat-input">
       <InputField
         newMessage={newMessage}
