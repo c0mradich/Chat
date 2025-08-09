@@ -324,3 +324,28 @@ def register_socket_handlers(socketio):
                 print(f"Пользователь {user_name} оффлайн или sid не найден в Redis")
                 
             db.session.commit()
+
+    @socketio.on("changeUser")
+    def changeUser(data):
+        name = data["name"]
+        oldName = data["oldName"]
+
+        old_key = f"user:{oldName}"
+        new_key = f"user:{name}"
+        try:
+            sid_bytes = r.get(old_key)
+            if sid_bytes:
+                sid = sid_bytes.decode("utf-8")
+                
+                # Удаляем старый ключ
+                r.delete(old_key)
+                
+                # Создаём новый
+                r.set(new_key, sid)
+
+                print(f"Redis: {old_key} → {new_key} (sid: {sid})")
+            else:
+                print(f"Redis: старый ключ {old_key} не найден")
+        except Exception as e:
+            print(e)
+

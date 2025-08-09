@@ -33,7 +33,7 @@ const { sendMessage: wsSendMessage } = useChat(
   (msg) => setMessages(prev => [...prev, msg]),
   (id) => setMessages(prev => prev.filter(msg => msg.id !== id)),
   (msg) => setMessages(prev => {return prev.map(m => m.id === msg.id ? { ...m, text: msg.text } : m)}),
-  setUsers, setLoading, setChatsInfo
+  setUsers, setLoading, setChatsInfo, users
 )
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз

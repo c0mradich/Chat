@@ -4,10 +4,7 @@ from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import get_or_create_chat
 from Python_Utils.mime import get_mime_type_from_extension
 from flask_socketio import emit
-#import redis
 import base64, os
-
-# r = redis.Redis(host='localhost', port=6379)
 
 def register_routes(app, socketio):
     @app.route('/')
@@ -44,10 +41,6 @@ def register_routes(app, socketio):
             "message": "Пользователь успешно зарегистрирован!",
             "user": { "name": name }
         }), 200
-
-
-
-
 
     @app.route("/login", methods=["POST"])
     def login():
@@ -213,3 +206,35 @@ def register_routes(app, socketio):
             })
 
         return render_template("Users.html", users=users_list, chats=chats, messages=message_list)
+    
+    @app.route("/aboutMe", methods=["GET", "POST"])
+    def aboutMe():
+        username = session.get("username")
+        user_id = session.get("user_id")
+        if not username or not user_id:
+            return jsonify({"error": "Неавторизованный"}), 401
+
+        if request.method == "POST":
+            data = request.get_json()
+            if not data or "name" not in data:
+                return jsonify({"error": "Нет имени в запросе"}), 400
+            
+            currentUser = User.query.filter_by(name=data["name"]).first()
+            if currentUser:
+                return jsonify({"error": "Это имя уже используеться!"}), 401
+            
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({"error": "Пользователь не найден"}), 404
+
+            user.name = data["name"]
+            db.session.commit()
+            socketio.emit("changeUser", {"name": user.name, "oldName": session["username"]})
+            session["username"] = user.name
+    
+            return jsonify({"success": True})
+
+        else:
+            return jsonify({"name": username})
+
+        

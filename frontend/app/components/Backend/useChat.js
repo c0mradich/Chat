@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage, setUsers, setLoading, setChatsInfo) {
+export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage, setUsers, setLoading, setChatsInfo, users) {
   const socketRef = useRef();
 
   useEffect(() => {
@@ -40,6 +40,26 @@ socketRef.current.on("add_user", (msg)=>{
 })
 
 
+socketRef.current.on('changeUser', (msg) => {
+  console.warn(msg);
+  const { name, oldName } = msg;
+  let i = 0;
+
+  setUsers((prevUsers) =>
+    prevUsers.map((user) => {
+      if (user.name === oldName) {
+        i++;
+        return { ...user, name };
+      }
+      return user;
+    })
+  );
+
+  if (i === 0) {
+    socketRef.current.emit("changeUser", {"name": name, "oldName": oldName})
+  }
+});
+
 socketRef.current.on('get_user_chats', (msg) => {
   const arr = [];
   const currentUserName = msg.name
@@ -60,6 +80,8 @@ socketRef.current.on('get_user_chats', (msg) => {
       chatParticipants: chat.participants
     });
   }
+
+  
   setUsers(prev=>[...prev, ...arr])
   setChatsInfo(prev=>[...prev, ...arr])
   setLoading(false);
