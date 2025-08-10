@@ -18,14 +18,12 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
   function handleDelete() {
     if(name===selectedMsg.sender){
       handleSendMessage({selectedMsg}, 'delete_msg')
-      console.log("Удалить сообщение:", selectedMsg);
     }
     handleClosePopup();
   }
 
   function handleEdit() {
     if(name===selectedMsg.sender){
-      console.log("Редактировать сообщение:", selectedMsg);
       setEditingMsgId(selectedMsg.id)
       setNewMessage(selectedMsg.text)
     }
@@ -57,7 +55,6 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
       }
     } catch (e) {
       console.warn("Не base64 или ошибка рендера:", e.message);
-      console.warn(msg);
       return <div className="message-text">{msg.text}</div>;
     }
   }

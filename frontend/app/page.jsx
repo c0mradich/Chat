@@ -82,7 +82,6 @@ useEffect(() => {
   if (!chatId) return;
   (async () => {
     const history = await fetchMessages(chatId);
-    // console.log(history)
     setMessages(history);
   })();
 }, [chatId]);

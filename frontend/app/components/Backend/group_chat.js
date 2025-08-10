@@ -33,16 +33,13 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
   const handleCreateGroup = () => {
     if (chatName && selectedUsers.length > 0) {
       handleSendMessage({ users: selectedUsers, name: chatName }, "create_group");
-      console.warn(selectedUsers)
     }
     resetState();
   };
 
   const handleAddUser = () => {
-    console.log(currentChatInfo)
     if (selectedUsers.length > 0 && currentChatInfo?.id) {
       handleSendMessage({ users: selectedUsers, chat_id: currentChatInfo.id, participants: currentChatInfo.chatParticipants}, "add_user_to_group");
-      console.log("Отправил add_user с чат айди");
     }
     resetState();
   };
@@ -171,7 +168,7 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
                   .filter((user) => user.name !== name && !user.isGroup)
                   .map((user) => (
                     <label
-                      key={user.id}
+                      key={user.name}
                       className="flex items-center space-x-2 py-1"
                     >
                       <input
@@ -232,7 +229,7 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
                   )
                   .map((user) => (
                     <label
-                      key={user.id}
+                      key={user.name}
                       className="flex items-center space-x-2 py-1"
                     >
                       <input

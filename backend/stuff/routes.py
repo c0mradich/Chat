@@ -103,7 +103,6 @@ def register_routes(app, socketio):
         chat_id = chat_info.get('id')
 
         if chat_id is None:
-            print(chat_info)
             # Создаем новый чат, если id не передан
             chat_id = get_or_create_chat(chat_info['chatParticipants'][0], chat_info['chatParticipants'][1], db, Chat, ChatParticipant, User, chat_info)
 

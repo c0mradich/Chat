@@ -20,8 +20,13 @@ services:
     depends_on:
       - backend
 
-  redis:
-    image: redis:7-alpine
-    container_name: redis-server
-    ports:
-      - "6379:6379"
+redis:
+  image: redis:7-alpine
+  container_name: redis-server
+  ports:
+    - "6379:6379"
+  volumes:
+    - redis-data:/data
+
+volumes:
+  redis-data:

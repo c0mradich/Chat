@@ -18,7 +18,6 @@ export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
     setMimeType(mimeType);
 
     recorder.start();
-    console.log(`Микрофон включен и запись начата (${mimeType})`);
   } catch (err) {
     console.error('Ошибка при включении микрофона:', err);
   }
@@ -47,7 +46,6 @@ export const stopMicro = async (
           const base64 = reader.result;
           const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
           handleSendMessage({ file: base64, name: `audio_message.${ext}`, type: mimeType }, 'send_file');
-          console.log(`Файл сформирован: ${mimeType}, размер: ${blob.size} байт`);
           resolve();
         };
 
@@ -56,7 +54,6 @@ export const stopMicro = async (
 
       micRecorder.requestData();
       micRecorder.stop();
-      console.log('Запись остановлена');
     });
 
     // Теперь можно выключать микрофон и сбрасывать состояния
@@ -66,6 +63,5 @@ export const stopMicro = async (
     }
     setMicRecorder(null);
     setMimeType(null);
-    console.log('Микрофон выключен');
   }
 };

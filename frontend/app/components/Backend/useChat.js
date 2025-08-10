@@ -41,7 +41,6 @@ socketRef.current.on("add_user", (msg)=>{
 
 
 socketRef.current.on('changeUser', (msg) => {
-  console.warn(msg);
   const { name, oldName } = msg;
   let i = 0;
 
@@ -61,7 +60,6 @@ socketRef.current.on('changeUser', (msg) => {
 });
 
 socketRef.current.on('get_user_chats', (msg) => {
-  console.log(msg)
   const arr = [];
   const currentUserName = msg.name
 

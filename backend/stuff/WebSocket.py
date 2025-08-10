@@ -36,13 +36,11 @@ def register_socket_handlers(socketio):
             name = data['name']
             r.set(f'user:{name}', request.sid)
             sid_bytes = r.get(f'user:{name}')
-            print(sid_bytes.decode('utf-8'))
-        except:
-            print("poh")
+        except Exception as e:
+            print(e)
 
         chat_id = data['chat_id']
         join_room(chat_id)
-        print(f"{request.sid} joined room {chat_id}")
 
     @socketio.on('leave')
     def on_leave(data):
@@ -51,7 +49,7 @@ def register_socket_handlers(socketio):
 
         if not name:
             print("Ошибка: 'name' отсутствует в данных leave")
-            return  # Или как-то иначе обработать
+            return 
 
         if not chat_id:
             print("Ошибка: 'chat_id' отсутствует в данных leave")
@@ -59,7 +57,6 @@ def register_socket_handlers(socketio):
 
         r.delete(name)
         leave_room(chat_id)
-        print(f"{request.sid} left room {chat_id}")
 
 
     @socketio.on('send_message')
@@ -223,7 +220,6 @@ def register_socket_handlers(socketio):
     
     @socketio.on("create_group")
     def create_group(data):
-        print(data["text"]["users"])
 
         creator_name = data.get('sender')
         creator = User.query.filter_by(name=creator_name).first()
@@ -273,8 +269,6 @@ def register_socket_handlers(socketio):
 
         db.session.commit()
 
-        print(f"Группа '{chatname}' успешно создана с участниками: {participants_names}")
-
         chat_info = {
             "id": new_chat._id,
             "name": chatname,
@@ -292,7 +286,6 @@ def register_socket_handlers(socketio):
 
     @socketio.on("add_user_to_group")
     def add_user_to_group(data):
-        print(data)
         users = data['text']['users']  # список имён пользователей
         chat_id = data['chat_id']
         participants_names = data['text']['participants']
