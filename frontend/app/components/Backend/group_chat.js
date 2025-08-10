@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 export default function OptionsMenu({ users, handleSendMessage, name, currentChatInfo }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,6 +9,9 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [chatName, setChatName] = useState("");
+  const groupModalRef = useRef(null)
+  const addUserModelRef = useRef(null)
+  const menuRef = useRef(null)
     const resetState = () => {
     setShowCreateGroupModal(false);
     setShowAddUserModal(false);
@@ -23,6 +27,8 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
         : [...prev, userName]
     );
   };
+
+
 
   const handleCreateGroup = () => {
     if (chatName && selectedUsers.length > 0) {
@@ -41,6 +47,46 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
     resetState();
   };
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Если меню открыто, и клик произошёл вне меню
+      if (isOpen && menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useEffect(()=>{
+    function handleCreateGroupModulEnterClick(event){
+      if(showCreateGroupModal && groupModalRef.current && event.key=="Enter"){
+        groupModalRef.current.click()
+      }
+    }
+
+    document.addEventListener("keydown", handleCreateGroupModulEnterClick)
+    return ()=>{
+      document.removeEventListener("keyDown", handleCreateGroupModulEnterClick)
+    }
+  }, [showCreateGroupModal])
+
+    useEffect(()=>{
+    function handleAddUserEnterClick(event){
+      if(showCreateGroupModal && groupModalRef.current && event.key=="Enter"){
+        addUserModelRef.current.click()
+      }
+    }
+
+    document.addEventListener("keydown", handleAddUserEnterClick)
+    return ()=>{
+      document.removeEventListener("keyDown", handleAddUserEnterClick)
+    }
+  }, [showAddUserModal])
 
   return (
     <div className="relative inline-block text-left">
@@ -57,6 +103,7 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={menuRef}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -69,19 +116,26 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
                   setShowCreateGroupModal(true);
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
+                className="w-full text-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
               >
                 Create Group Chat
               </button>
 
               <button
                 onClick={() => {
-                  currentChatInfo.isGroup && setShowAddUserModal(true);
+                  if (currentChatInfo?.isGroup) {
+                    setShowAddUserModal(true);
+                  }
                   setIsOpen(false);
                 }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl mt-1">
+                className="w-full text-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl mt-1">
                 Add User
               </button>
+              <Link href="/personalSettings" passHref>
+                <button className="w-full block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">
+                  Personal Data
+                </button>
+              </Link>
             </div>
           </motion.div>
         )}
@@ -140,6 +194,7 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
                   Cancel
                 </button>
                 <button
+                  ref={groupModalRef}
                   onClick={handleCreateGroup}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg"
                 >
@@ -200,6 +255,7 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
                   Cancel
                 </button>
                 <button
+                  ref={addUserModelRef}
                   onClick={handleAddUser}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg"
                 >

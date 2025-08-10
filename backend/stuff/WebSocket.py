@@ -159,7 +159,6 @@ def register_socket_handlers(socketio):
 
     @socketio.on("get_userlist")
     def get_users_and_chats(data):
-        # print(data)
         try:
             user_name = data['text']['name']
             # Найти пользователя по имени
@@ -183,7 +182,10 @@ def register_socket_handlers(socketio):
                 for p in participants:
                     if p.user:
                         participant_names.append(p.user.name)
-                        if p.user._id != user._id:
+
+                if not chat.is_group:  # 👈 только для личных чатов
+                    for p in participants:
+                        if p.user and p.user._id != user._id:
                             existing_chat_user_ids.add(p.user._id)
 
                 chat_list.append({
@@ -193,6 +195,7 @@ def register_socket_handlers(socketio):
                     "creator_id": chat.creator_id,
                     "participants": participant_names
                 })
+
 
             # Найти всех остальных юзеров, кроме текущего
             all_other_users = User.query.filter(User._id != user._id).all()

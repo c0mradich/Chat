@@ -5,6 +5,7 @@ from Python_Utils.utils import get_or_create_chat
 from Python_Utils.mime import get_mime_type_from_extension
 from flask_socketio import emit
 import base64, os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 def register_routes(app, socketio):
     @app.route('/')
@@ -18,6 +19,7 @@ def register_routes(app, socketio):
         data = request.get_json()
         name = data.get('name')
         password = data.get('password')
+        hashed = generate_password_hash(password)
 
         # Проверка, существует ли пользователь
         existing_user = User.query.filter_by(name=name).first()
@@ -28,12 +30,13 @@ def register_routes(app, socketio):
             }), 400
 
         # Создание и добавление нового пользователя
-        new_user = User(name, password)
+        new_user = User(name, hashed)
         db.session.add(new_user)
         db.session.commit()
+        user_id = getattr(new_user, 'id', getattr(new_user, '_id', None))
 
         # Уведомление всех по сокету
-        socketio.emit("add_user", { "name": name, "id": existing_user._id })
+        socketio.emit("add_user", { "name": name, "id": user_id })
 
         # Возвращаем ответ клиенту
         return jsonify({
@@ -44,24 +47,25 @@ def register_routes(app, socketio):
 
     @app.route("/login", methods=["POST"])
     def login():
-        data = request.get_json()  # Получаем данные в формате JSON
+        data = request.get_json() or {}
         name = data.get('name')
         password = data.get('password')
-        current_user = User.query.filter_by(name=name, isActive=False).first()
 
+        if not name or not password:
+            return jsonify({"success": False, "message": "Имя и пароль обязательны"}), 400
 
-        # Проверяем, есть ли пользователь с таким именем и паролем
-        existing_user = User.query.filter_by(name=name, password=password).first()
-        if existing_user:
-            current_user.isActive = True
-            db.session.commit()
-            # Успешный вход
-            session['user_id'] = existing_user._id  # сохраняем ID в сессию
-            session['username'] = existing_user.name
+        user = User.query.filter_by(name=name).first()
+        if user and check_password_hash(user.password, password):
+            if hasattr(user, 'isActive'):
+                user.isActive = True
+                db.session.commit()
+
+            session['user_id'] = getattr(user, 'id', getattr(user, '_id', None))
+            session['username'] = user.name
             return jsonify({"success": True, "message": "Вход успешен!"}), 200
         else:
-            # Неверные данные
             return jsonify({"success": False, "message": "Неверное имя пользователя или пароль!"}), 401
+
 
     @app.route("/me")
     def me():
