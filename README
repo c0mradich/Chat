@@ -17,8 +17,8 @@ This is a simple full-stack project with a Flask backend, Next.js frontend, and 
 
 1. Clone this repository:
 
-git clone https://github.com/yourusername/yourproject.git
-cd yourproject
+git clone https://github.com/c0mradich/Chat
+cd Chat
 Build and start all services (backend, frontend, Redis):
 
 docker-compose up --build
