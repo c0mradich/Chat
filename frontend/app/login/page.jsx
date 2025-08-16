@@ -61,22 +61,24 @@ function SignIn() {
       <label>Login</label>
       <div className='inputContainer'>
         <input
-          placeholder="Имя"
+          placeholder=" "
           name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <label htmlFor="name"> Name </label>
       </div>
 
       {errors.name && <span style={{ color: 'red' }}>{errors.name}</span>}
     <div className='inputContainer'>
       <input
         type="password"
-        placeholder="Пароль"
+        placeholder=" "
         name="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+      <label htmlFor="password"> Password </label>
     </div>
       {errors.password && <span style={{ color: 'red' }}>{errors.password}</span>}
 
