@@ -22,7 +22,7 @@ strong{
     color: rgb(81, 157, 180);
 }
 
-form > * {
+form button {
     width: 40%;
     padding: 10px;
     font-size: 16px;
@@ -30,8 +30,38 @@ form > * {
     border: 1px solid #ccc; /* граница для инпутов */
     transition: all 0.3s ease-in-out; /* плавный переход при фокусе */
 }
+form .inputContainer{
+    width: 40%;
+    position: relative;
+}
+form .inputContainer input{
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc; /* граница для инпутов */
+    transition: all 0.3s ease-in-out; /* плавный переход при фокусе */
+}
+form .inputContainer label{
+    position: absolute;
+    top: 0.7rem;    /* примерно по центру инпута */
+    left: 0.7rem;
+    color: #bbb;    /* сероватый цвет для лейбла */
+    font-size: 1rem;
+    pointer-events: none; /* чтобы клик проходил на input */
+    transition: 0.2s ease all;
+    background: #f4f6f9;  /* фон совпадает с input */
+    padding: 0 0.3rem;    /* чтобы «разрывал» рамку */
+    border-radius: 3px;
+}
+form .inputContainer input:focus+label, form .inputContainer input:not(:placeholder-shown)+label{
+    font-size: 0.8em;
+    color: rgb(39, 97, 114);
+    top: -0.6rem;      /* поднять наверх */
+    left: 0.8rem;
+}
 
-form > *:focus {
+form *:focus {
     border-color: rgb(39, 97, 114); /* изменение цвета границы при фокусе */
     box-shadow: 0 0 5px rgb(39, 97, 114); /* лёгкая тень при фокусе */
     outline: none; /* убираем стандартную обводку */

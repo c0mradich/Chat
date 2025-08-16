@@ -69,29 +69,36 @@ export default function SignUp() {
   return (
     <form onSubmit={handleSubmit}>
       <label>Sign-Up</label>
-      <input
-        placeholder="Имя"
-        name='name'
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+      <div className='inputContainer'>
+        <input
+          placeholder=" "
+          name='name'
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <label htmlFor="name"> Name</label>
+      </div>
       {errors.name && <span style={{ color: 'red' }}>{errors.name}</span>}
-
-      <input
-        name="password"
-        type="password"
-        placeholder="Пароль"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <div className="inputContainer">
+        <input
+          name="password"
+          type="password"
+          placeholder=" "
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <label htmlFor="password">Password</label>
+      </div>
       {errors.password && <span style={{ color: 'red' }}>{errors.password}</span>}
-
-      <input
-        name='repeatPassword'
-        type="password"
-        placeholder="Повторите пароль"
-        ref={rpassword}
-      />
+      <div className='inputContainer'>
+        <input
+          name='repeatPassword'
+          type="password"
+          placeholder=" "
+          ref={rpassword}
+        />
+        <label htmlFor="repeatPassword">Repeat Password</label>
+      </div>
       {errors.repeat && <span style={{ color: 'red' }}>{errors.repeat}</span>}
 
       <button type="submit">Войти</button>

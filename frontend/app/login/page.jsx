@@ -59,14 +59,17 @@ function SignIn() {
   return (
     <form onSubmit={handleSubmit} method='POST'>
       <label>Login</label>
-      <input
-        placeholder="Имя"
-        name="name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      {errors.name && <span style={{ color: 'red' }}>{errors.name}</span>}
+      <div className='inputContainer'>
+        <input
+          placeholder="Имя"
+          name="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
 
+      {errors.name && <span style={{ color: 'red' }}>{errors.name}</span>}
+    <div className='inputContainer'>
       <input
         type="password"
         placeholder="Пароль"
@@ -74,6 +77,7 @@ function SignIn() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+    </div>
       {errors.password && <span style={{ color: 'red' }}>{errors.password}</span>}
 
       <button type="submit">Войти</button>
