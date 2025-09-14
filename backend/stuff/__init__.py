@@ -1,6 +1,5 @@
 import os
 from flask import Flask
-from flask_cors import CORS
 from flask_socketio import SocketIO
 from .db import db
 from .WebSocket import register_socket_handlers
@@ -9,7 +8,6 @@ from .routes import register_routes
 # -----------------------------
 # Настройки окружения
 # -----------------------------
-import os
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
@@ -18,18 +16,6 @@ SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 # -----------------------------
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-
-socketio = SocketIO(
-    app,
-    cors_allowed_origins=[FRONTEND_URL],
-    async_mode="eventlet",
-    max_http_buffer_size=50 * 1024 * 1024
-)
-
-CORS(app, origins=["https://chat-qddu.vercel.app", "http://localhost:3000"], supports_credentials=True)
-
 
 # -----------------------------
 # Настройка папок для БД и загрузок
@@ -53,7 +39,16 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -----------------------------
 db.init_app(app)
 
-socketio = SocketIO(app, cors_allowed_origins=FRONTEND_URL, async_mode='eventlet', max_http_buffer_size=50 * 1024 * 1024 )
+# Тут SocketIO и CORS вместе, больше ничего не надо
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[
+        FRONTEND_URL,
+        "https://chat-blond-iota.vercel.app"
+    ],
+    async_mode='eventlet',
+    max_http_buffer_size=50 * 1024 * 1024
+)
 
 # -----------------------------
 # Роуты и Socket обработчики
@@ -65,5 +60,4 @@ register_routes(app, socketio)
 # Запуск (только при прямом старте)
 # -----------------------------
 if __name__ == '__main__':
-    # debug=True можно выключить в Docker
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
