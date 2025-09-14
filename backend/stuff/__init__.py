@@ -4,6 +4,7 @@ from flask_socketio import SocketIO
 from .db import db
 from .WebSocket import register_socket_handlers
 from .routes import register_routes
+from flask_cors import CORS
 
 # -----------------------------
 # Настройки окружения
@@ -37,15 +38,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -----------------------------
 # Инициализация DB и SocketIO
 # -----------------------------
+CORS(app, origins=[FRONTEND_URL], supports_credentials=True)
 db.init_app(app)
 
 # Тут SocketIO и CORS вместе, больше ничего не надо
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[
-        FRONTEND_URL,
-        "https://chat-blond-iota.vercel.app"
-    ],
+    cors_allowed_origins=[FRONTEND_URL],
     async_mode='eventlet',
     max_http_buffer_size=50 * 1024 * 1024
 )
