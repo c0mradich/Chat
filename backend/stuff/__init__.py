@@ -38,7 +38,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -----------------------------
 # Инициализация DB и SocketIO
 # -----------------------------
-CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 db.init_app(app)
 
 # Тут SocketIO и CORS вместе, больше ничего не надо
