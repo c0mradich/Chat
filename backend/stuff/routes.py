@@ -3,9 +3,16 @@ from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import get_or_create_chat
 from Python_Utils.mime import get_mime_type_from_extension
+from Python_Utils.func import generate_file_hash
 from flask_socketio import emit
 import base64, os
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import send_from_directory
+from datetime import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
 
 def register_routes(app, socketio):
     @app.route('/')
@@ -151,6 +158,27 @@ def register_routes(app, socketio):
         except Exception as e:
             print("Ошибка при получении сообщений:", e)
             return jsonify({"error": "Internal server error"}), 500
+    
+    @app.route("/uploads", methods=["POST"])
+    def uploads():
+        if "file" not in request.files:
+            return jsonify({"success": False, "message": "Файл не найден"}), 400
+        
+        file = request.files["file"]  # <— Werkzeug FileStorage
+        filename = file.filename
+        sender = request.form.get("sender")
+        chat_id = request.form.get("chatId")
+
+        timestamp = datetime.utcnow().isoformat()
+        hashed_filename = generate_file_hash(filename, sender, chat_id, timestamp)
+        save_path = os.path.join(UPLOAD_FOLDER, hashed_filename)
+        file.save(save_path)          # сохраняем на диск
+        
+        return jsonify({"success": True, "filename": filename, "path": f"/uploads/{hashed_filename}"})
+    
+    @app.route("/uploads/<path:filename>", methods=["GET"])
+    def get_upload(filename):
+        return send_from_directory(UPLOAD_FOLDER, filename)
 
     @app.route("/getUserList", methods=["GET"])
     def getUserList():
@@ -239,5 +267,3 @@ def register_routes(app, socketio):
 
         else:
             return jsonify({"name": username})
-
-        

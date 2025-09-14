@@ -16,3 +16,4 @@ EXPOSE 5000
 
 # Команда запуска (главный файл main.py)
 CMD ["python", "main.py"]
+

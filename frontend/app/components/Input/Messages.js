@@ -1,6 +1,8 @@
 import {useRef, useState} from "react"
 import { Dialog, DialogTitle, DialogActions, Button } from '@mui/material';
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 export function Messages({ messages, name, handleSendMessage,  setNewMessage, setEditingMsgId}) {
   const [open, setOpen] = useState(false);
   const [selectedMsg, setSelectedMsg] = useState(null);
@@ -16,6 +18,7 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
   }
 
   function handleDelete() {
+    console.log("Porno", name, selectedMsg)
     if(name===selectedMsg.sender){
       handleSendMessage({selectedMsg}, 'delete_msg')
     }
@@ -31,33 +34,42 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
   }
 
   function renderContent(msg) {
+  const { content, text } = msg;
+
+  if (!content) return <div className="message-text">{text}</div>;
+
+  // Проверяем base64
+  if (typeof content === 'string' && content.startsWith('data:')) {
     try {
-      const content = msg.content;
-      if (typeof content !== 'string' || !content.startsWith('data:')) {
-        throw new Error("msg.content не содержит base64");
-      }
-
-      const [metadata, base64Data] = content.split(",");
-      if (!metadata || !base64Data) {
-        throw new Error("Invalid base64 format");
-      }
-
-      const mime = metadata.split(":")[1]?.split(";")[0] || '';
-
-      if (mime.startsWith("image/")) {
-        return <img src={content} alt="file" className="message-image" />;
-      } else if (mime.startsWith("audio/")) {
-        return <audio controls src={content} />;
-      } else if (mime.startsWith("video/")) {
-        return <video controls src={content} />;
-      } else {
-        return <a href={content} download>Скачать файл</a>;
-      }
-    } catch (e) {
-      console.warn("Не base64 или ошибка рендера:", e.message);
-      return <div className="message-text">{msg.text}</div>;
+      const [metadata, base64Data] = content.split(',');
+      const mime = metadata.split(':')[1]?.split(';')[0] || '';
+      if (mime.startsWith('image/')) return <img src={content} alt="file" className="message-image" />;
+      if (mime.startsWith('audio/')) return <audio controls src={content} />;
+      if (mime.startsWith('video/')) return <video controls src={content} />;
+      return <a href={content} download>Скачать файл</a>;
+    } catch (err) {
+      console.warn("Ошибка при рендере base64:", err);
+      return <div className="message-text">{text}</div>;
     }
   }
+
+  // Ссылка на серверный файл
+  const url = typeof content === 'string' ? `${apiURL}/${encodeURI(content)}` : '';
+  const ext = url.split('.').pop()?.toLowerCase() || '';
+
+  const fileTypes = {
+    images: ['png','jpg','jpeg','gif','webp'],
+    audios: ['mp3','wav','ogg'],
+    videos: ['mp4','webm','mov']
+  };
+
+  if (fileTypes.images.includes(ext)) return <img src={url} alt="file" className="message-image" />;
+  if (fileTypes.audios.includes(ext)) return <audio controls src={url} />;
+  if (fileTypes.videos.includes(ext)) return <video controls src={url} />;
+  
+  return <a href={url} download>Скачать файл</a>;
+}
+
 
   return (
     <div className="messages">
@@ -78,9 +90,9 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
             style={{ cursor: 'pointer' }}
           >
             <div className="message-sender">{displayName}</div>
-            {msg.content ? renderContent(msg) : (
-              <div className="message-text">{msg.text}</div>
-            )}
+              {msg.content && msg.content.trim() !== '' ? renderContent(msg) : (
+                  <div className="message-text">{msg.text}</div>
+              )}
           </div>
         );
       })}

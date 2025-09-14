@@ -1,37 +1,60 @@
+import os
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO
-import os
-import eventlet
 from .db import db
 from .WebSocket import register_socket_handlers
 from .routes import register_routes
 
+# -----------------------------
+# Настройки окружения
+# -----------------------------
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://192.168.0.63:3000")
+SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
+# -----------------------------
+# Инициализация приложения
+# -----------------------------
 app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
-app.secret_key = "YOUR_SECRET_KEY"
+app.secret_key = SECRET_KEY
 
+socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app, supports_credentials=True)
+
+
+# -----------------------------
+# Настройка папок для БД и загрузок
+# -----------------------------
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# База данных
 db_dir = os.path.join(basedir, '..', '..', 'instance')
-if not os.path.exists(db_dir):
-    os.makedirs(db_dir, exist_ok=True)
-
+os.makedirs(db_dir, exist_ok=True)
 db_path = os.path.join(db_dir, 'users.sqlite3')
-
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+# Папка для загрузок
+UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
+# -----------------------------
+# Инициализация DB и SocketIO
+# -----------------------------
 db.init_app(app)
 
-socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins=FRONTEND_URL, async_mode='eventlet', max_http_buffer_size=50 * 1024 * 1024 )
+
+# -----------------------------
+# Роуты и Socket обработчики
+# -----------------------------
 register_socket_handlers(socketio)
 register_routes(app, socketio)
+
+# -----------------------------
+# Запуск (только при прямом старте)
+# -----------------------------
+if __name__ == '__main__':
+    # debug=True можно выключить в Docker
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

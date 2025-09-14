@@ -25,7 +25,9 @@ body {
   background-color: #202020;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
-
+.hamburger{
+  user-select: none;
+}
 /* Сайдбар */
 .sidebar {
   width: 300px;
@@ -82,6 +84,8 @@ body {
 }
 
 .chat-header {
+  display: flex;
+  justify-content: space-between;
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 20px;
@@ -134,6 +138,7 @@ body {
 /* Ввод */
 .chat-input {
   display: flex;
+  flex-wrap: nowrap !important;
   align-items: center;
   gap: 10px;
   margin-top: 10px;
@@ -204,4 +209,118 @@ body {
 
 .file-upload input[type="file"] {
   display: none;
+}
+
+/* === Общие стили остаются === */
+
+/* Адаптивка */
+@media (max-width: 1024px) {
+  .chat-container {
+    flex-direction: column;
+    width: 95%;
+    height: 95%;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    padding: 15px;
+  }
+
+  .chat-area {
+    border-radius: 0 0 8px 8px;
+    padding: 15px;
+  }
+
+  .messages {
+    gap: 6px;
+    padding-right: 5px;
+  }
+
+  .message {
+    max-width: 80%;
+    padding: 8px 12px;
+  }
+
+  .chat-input input {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  .input-buttons button {
+    padding: 8px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    height: 100%;
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+.close{
+    display: none; /* убираем сайдбар на маленьких экранах */
+}
+  .chat-area {
+    flex-grow: 1;
+    padding: 10px;
+  }
+
+  .messages {
+    gap: 4px;
+    padding-right: 0;
+  }
+
+  .message {
+    max-width: 90%;
+    font-size: 0.85rem;
+  }
+
+  .chat-header {
+    font-size: 18px;
+  }
+
+  .chat-input {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .chat-input input {
+    width: 100%;
+  }
+
+  .input-buttons {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .message {
+    max-width: 100%;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+
+  .chat-header {
+    font-size: 16px;
+  }
+
+  .input-buttons button {
+    padding: 6px;
+    font-size: 14px;
+  }
+
+  .audio-msg-btn,
+  .video-call-btn,
+  .call-btn,
+  .send-btn {
+    font-size: 28px;
+    padding: 12px;
+  }
 }

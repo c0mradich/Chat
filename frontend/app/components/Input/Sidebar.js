@@ -2,9 +2,9 @@ import OptionsMenu from "../Backend/group_chat"
 import  fetchChatId  from "../Backend/fetchChatId";
 import { useCallback } from "react";
 
-export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, chatId, currentChatInfo }){
+export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, chatId, currentChatInfo, sideBarOpen}){
     return (
-        <div className="search-container">
+        <div className={`search-container ${sideBarOpen?'':'close'}`}>
           <input
             type="text"
             className="search-input"
@@ -17,7 +17,7 @@ export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, 
     )
 }
 
-export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrentChatInfo, chatId, name }) {
+export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrentChatInfo, chatId, name, Sidebar }) {
   const handleClick = async (user) => {
     setCurrentChat(user.name);
     const chat = chatsInfo.find(chat => chat.name === user.name);
@@ -30,7 +30,7 @@ export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrent
   };
 
   return (
-    <div className="user-list">
+    <div className={`user-list ${Sidebar?'':'close'}`}>
       {FilteredUsers && FilteredUsers.map(user => (
         <div
           key={user.id || user.name}

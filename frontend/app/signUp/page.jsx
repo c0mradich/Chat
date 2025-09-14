@@ -3,6 +3,8 @@ import { useState, useRef } from 'react';
 import "../css/styles.css"
 import Link from 'next/link';
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 export default function SignUp() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +43,7 @@ export default function SignUp() {
       };
 
       // Отправка данных на сервер
-      const response = await fetch('http://localhost:5000/addUser', {
+      const response = await fetch(`${apiURL}/addUser`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',  // Указываем, что отправляем JSON

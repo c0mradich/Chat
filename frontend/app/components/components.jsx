@@ -7,7 +7,7 @@ export function Progress({ loading, error }) {
 }
 
 export async function getId() {
-const res = await fetch('http://localhost:5000/me', {
+const res = await fetch('http://192.168.0.63:5000/me', {
   credentials: 'include',  // отправляем куки на сервер
 });
 const data = await res.json();
@@ -28,7 +28,7 @@ export async function redirect(setName) {
 }
 
 export function leave(name) {
-  fetch("http://localhost:5000/leave", {
+  fetch("http://192.168.0.63:5000/leave", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -38,10 +38,10 @@ export function leave(name) {
 }
 
 
-export function ChatHeader({currentChat}){
+export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen}){
     return(
         <div className="chat-header">
-            <span>Chat with {currentChat || "Select a user"}</span>
+            <span>Chat with {currentChat || "Select a user"}</span> <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
         </div>
     )
 }

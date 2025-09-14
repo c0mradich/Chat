@@ -13,11 +13,14 @@ export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
     }
 
     const recorder = new MediaRecorder(stream, { mimeType });
+
+    // Передаем состояния наружу
     setMicStream(stream);
     setMicRecorder(recorder);
     setMimeType(mimeType);
 
-    recorder.start();
+    // Стартуем с интервалом, чтобы не копить всё в памяти
+    recorder.start(1000); // раз в секунду отдаёт чанки
   } catch (err) {
     console.error('Ошибка при включении микрофона:', err);
   }
@@ -31,7 +34,7 @@ export const stopMicro = async (
   if (micRecorder && micRecorder.state !== 'inactive') {
     const chunks = [];
 
-    await new Promise((resolve) => {
+    await new Promise((resolve, reject) => {
       micRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           chunks.push(e.data);
@@ -39,24 +42,33 @@ export const stopMicro = async (
       };
 
       micRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: mimeType });
-        const reader = new FileReader();
+        try {
+          const blob = new Blob(chunks, { type: mimeType });
+          const reader = new FileReader();
 
-        reader.onloadend = () => {
-          const base64 = reader.result;
-          const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-          handleSendMessage({ file: base64, name: `audio_message.${ext}`, type: mimeType }, 'send_file');
-          resolve();
-        };
+          reader.onloadend = () => {
+            const base64 = reader.result;
+            const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+            handleSendMessage(
+              { file: base64, name: `audio_message.${ext}`, type: mimeType },
+              'send_file'
+            );
+            resolve();
+          };
 
-        reader.readAsDataURL(blob);
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(blob);
+        } catch (err) {
+          reject(err);
+        }
       };
 
-      micRecorder.requestData();
       micRecorder.stop();
+    }).catch((err) => {
+      console.error('Ошибка при остановке записи:', err);
     });
 
-    // Теперь можно выключать микрофон и сбрасывать состояния
+    // Освобождаем ресурсы
     if (micStream) {
       micStream.getTracks().forEach(track => track.stop());
       setMicStream(null);

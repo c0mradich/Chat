@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import './css/chat.css'; // Импорт стилей
 import { Progress, ChatHeader, redirect, leave} from './components/components';
 import { Sidebar, User_List, filteredUsers, useHandleUserClick, fetchUsers } from "./components/Input/Sidebar"
-import {Messages} from "./components/Input/Messsages"
+import {Messages} from "./components/Input/Messages"
 import { InputField } from './components/Input/InputField';
 import {InputButtons} from "./components/Input/InputfButtons"
 import { fetchMessages } from './components/Backend/fetchMessages';
 import fetchChatId from './components/Backend/fetchChatId';
 import { useChat } from './components/Backend/useChat';
+
+const apiURL = process.env.NEXT_PUBLIC_API_URL
 
 function Home() {
   const [name, setName] = useState(null)
@@ -26,6 +28,7 @@ function Home() {
   const [editingMsgId, setEditingMsgId] = useState(null);
   const [chatsInfo, setChatsInfo] = useState([])
   const [currentChatInfo, setCurrentChatInfo] = useState({})
+  const [sideBarOpen, setSideBarOpen] = useState(true)
 // после всех useState:
 const { sendMessage: wsSendMessage } = useChat(
   chatId,
@@ -89,7 +92,7 @@ useEffect(() => {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon('http://localhost:5000/leave', JSON.stringify({ name }));
+    navigator.sendBeacon(`${apiURL}/leave`, JSON.stringify({ name }));
   });
 }
 
@@ -107,6 +110,7 @@ if (typeof window !== 'undefined') {
         name={name}
         chatId={chatId}
         currentChatInfo={currentChatInfo}
+        sideBarOpen={sideBarOpen}
       />
 
       <User_List 
@@ -116,12 +120,13 @@ if (typeof window !== 'undefined') {
         setCurrentChatInfo={setCurrentChatInfo} 
         chatId={chatId} 
         name={name}
+        Sidebar={sideBarOpen}
       />
 
       </div>
        {currentChat && (
       <div className="chat-area">
-      <ChatHeader currentChat={currentChat}/>
+      <ChatHeader currentChat={currentChat} setSideBarOpen={setSideBarOpen} sideBarOpen={sideBarOpen}/>
       <Messages 
         messages={messages}
         name={name} 
@@ -131,19 +136,21 @@ if (typeof window !== 'undefined') {
       />
 
         <div className="chat-input">
-      <InputField
-        newMessage={newMessage}
-        setNewMessage={setNewMessage}
-        handleSendMessage={wsSendMessage}
-        editingMsgId={editingMsgId}
-        setEditingMsgId={setEditingMsgId}
-      />
+          <InputField
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            handleSendMessage={wsSendMessage}
+            editingMsgId={editingMsgId}
+            setEditingMsgId={setEditingMsgId}
+          />
 
-      <InputButtons
-        newMessage={newMessage}
-        setNewMessage={setNewMessage}
-        handleSendMessage={wsSendMessage}
-      />
+          <InputButtons
+            newMessage={newMessage}
+            setNewMessage={setNewMessage}
+            handleSendMessage={wsSendMessage}
+            sender={name}
+            chatId={chatId}
+          />
         </div>
       </div>
        )}

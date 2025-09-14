@@ -1,7 +1,8 @@
 import {useState, useRef} from "react"
 import { stopMicro, startMicro } from "./micro";
+const apiURL = process.env.NEXT_PUBLIC_API_URL
 
-export function InputButtons({ newMessage, setNewMessage, handleSendMessage, }) {
+export function InputButtons({ newMessage, setNewMessage, handleSendMessage, sender, chatId }) {
   const [micStream, setMicStream] = useState(null);
   const [micRecorder, setMicRecorder] = useState(null);
   const [mimeType, setMimeType] = useState(null)
@@ -15,18 +16,34 @@ export function InputButtons({ newMessage, setNewMessage, handleSendMessage, }) 
   const inputFile = ()=>{
     fileInputRef.current?.click()
   }
-
-const handleFileChange = (e) => {
+  
+async function handleFileChange(e) {
   const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result; // base64 строка с префиксом data:...
-      handleSendMessage({ file: base64, name: file.name, type: file.type }, 'send_file');
-    };
-    reader.readAsDataURL(file);
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file); // <-- исправлено
+  formData.append("sender", sender);
+  formData.append("chatId", chatId);
+
+  try {
+    const res = await fetch(`${apiURL}/uploads`, {
+      method: "POST",
+      body: formData,
+      credentials: "include"
+    });
+
+    const data = await res.json();
+    console.log("Upload result:", data);
+
+    // теперь можно через WS отправить ссылку другим клиентам
+    handleSendMessage({ path: data.path, name: file.name, type: file.type }, "send_file");
+  } catch (err) {
+    console.error("Ошибка при загрузке файла:", err);
   }
-};
+}
+
+
 
 
   return (
@@ -37,7 +54,6 @@ const handleFileChange = (e) => {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
-      <button className="call-btn">📞</button>
       <button className="video-call-btn">📹</button>
             {micStream ? (
         <button className="audio-msg-btn" onClick={() => stopMicro(micStream, micRecorder, mimeType, setMicStream, setMicRecorder, setMimeType, handleSendMessage)}>⏹️</button>

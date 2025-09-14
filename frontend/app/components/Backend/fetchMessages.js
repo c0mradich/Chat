@@ -1,6 +1,8 @@
 // ./components/fetchMessages.js
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 export async function fetchMessages(chatId) {
-  const response = await fetch(`http://localhost:5000/get_messages/${chatId}`, {
+  const response = await fetch(`${apiURL}/get_messages/${chatId}`, {
     credentials: 'include'
   });
   if (!response.ok) {

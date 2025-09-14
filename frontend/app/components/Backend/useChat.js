@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
+
 export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage, setUsers, setLoading, setChatsInfo, users) {
   const socketRef = useRef();
 
   useEffect(() => {
     // 1) Подключаемся
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(`${apiURL}`, {
       withCredentials: true,
     });
 
@@ -17,6 +20,7 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
 
     // 3) Слушаем входящие
     socketRef.current.on('receive_message', (msg) => {
+      console.log(msg)
       onMessage(msg); // например, setMessages(prev => [...prev, msg])
     });
 
@@ -96,6 +100,7 @@ socketRef.current.on('get_user_chats', (msg) => {
 
   // Функция для отправки
   const sendMessage = (text, path) => {
+    console.log("File: ", text, "path", path)
     socketRef.current.emit(path, {
       chat_id: chatId,
       sender: name,

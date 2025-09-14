@@ -3,6 +3,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import '../css/styles.css';
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 function SignIn() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +19,7 @@ function SignIn() {
 
   const handleLogin = async ({ name, password }) => {
     try {
-      const res = await fetch('http://localhost:5000/login', {
+      const res = await fetch(`${apiURL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',  // Вот это важно!

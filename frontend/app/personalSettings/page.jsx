@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import styles from "./data.module.css";
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 export default function PersonalSettings() {
   const [name, setName] = useState("");
   const [data, setData] = useState("")
@@ -12,10 +14,10 @@ export default function PersonalSettings() {
   useEffect(() => {
     async function fetchName() {
       try {
-        const res = await fetch("http://localhost:5000/aboutMe", {
+        const res = await fetch(`${apiURL}/aboutMe`, {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Ошибка загрузки данных");
+        if (!res.ok) throw new Error("Error by loading data");
         const someData = await res.json();
         setData(someData)
         setName(someData.name);
@@ -33,13 +35,13 @@ export default function PersonalSettings() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/aboutMe", {
+      const res = await fetch(`${apiURL}/aboutMe`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      if (!res.ok) throw new Error("Ошибка при сохранении");
+      if (!res.ok) throw new Error("Error by saving");
     } catch (e) {
       setError(e.message);
     } finally {
