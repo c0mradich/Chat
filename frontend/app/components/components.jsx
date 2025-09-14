@@ -1,5 +1,7 @@
 import React from "react";
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL
+
 export function Progress({ loading, error }) {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -7,7 +9,7 @@ export function Progress({ loading, error }) {
 }
 
 export async function getId() {
-const res = await fetch('http://192.168.0.63:5000/me', {
+const res = await fetch(`${apiURL}/me`, {
   credentials: 'include',  // отправляем куки на сервер
 });
 const data = await res.json();
@@ -28,7 +30,7 @@ export async function redirect(setName) {
 }
 
 export function leave(name) {
-  fetch("http://192.168.0.63:5000/leave", {
+  fetch(`${apiURL}/leave`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
