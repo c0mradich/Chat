@@ -9,7 +9,8 @@ from .routes import register_routes
 # -----------------------------
 # Настройки окружения
 # -----------------------------
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://192.168.0.63:3000")
+import os
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
 # -----------------------------

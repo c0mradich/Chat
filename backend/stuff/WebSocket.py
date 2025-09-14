@@ -7,7 +7,9 @@ import base64
 from Python_Utils.mime import get_mime_type_from_extension
 import redis
 
-r = redis.Redis(host='localhost', port=6379)
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+r = redis.from_url(REDIS_URL)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
