@@ -9,7 +9,7 @@ from flask_cors import CORS
 # -----------------------------
 # Настройки окружения
 # -----------------------------
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://chat-blond-iota.vercel.app")
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
 # -----------------------------
@@ -38,13 +38,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -----------------------------
 # Инициализация DB и SocketIO
 # -----------------------------
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
 db.init_app(app)
 
 # Тут SocketIO и CORS вместе, больше ничего не надо
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
+    cors_allowed_origins=FRONTEND_URL,
     async_mode='eventlet',
     max_http_buffer_size=50 * 1024 * 1024
 )
