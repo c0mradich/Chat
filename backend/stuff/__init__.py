@@ -19,7 +19,15 @@ SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-socketio = SocketIO(app, cors_allowed_origins=["https://chat-qddu.vercel.app", "http://localhost:3000"])
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[FRONTEND_URL],
+    async_mode="eventlet",
+    max_http_buffer_size=50 * 1024 * 1024
+)
+
 CORS(app, origins=["https://chat-qddu.vercel.app", "http://localhost:3000"], supports_credentials=True)
 
 
