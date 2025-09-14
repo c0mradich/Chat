@@ -9,7 +9,8 @@ from flask_cors import CORS
 # -----------------------------
 # Настройки окружения
 # -----------------------------
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://chat-blond-iota.vercel.app")
+FRONTEND_URL_TEST = os.environ.get("FRONTEND_URL", "https://chat-blond-iota.vercel.app")
+FRONTEND_URL = "https://chat-blond-iota.vercel.app"
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
 # -----------------------------
@@ -44,10 +45,11 @@ db.init_app(app)
 # Тут SocketIO и CORS вместе, больше ничего не надо
 socketio = SocketIO(
     app,
-    cors_allowed_origins=FRONTEND_URL,
+    cors_allowed_origins=[FRONTEND_URL],
     async_mode='eventlet',
     max_http_buffer_size=50 * 1024 * 1024
 )
+
 
 # -----------------------------
 # Роуты и Socket обработчики
