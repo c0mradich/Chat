@@ -31,6 +31,12 @@ db_path = os.path.join(db_dir, 'users.sqlite3')
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config.update(
+    SESSION_COOKIE_SECURE=True,       # куки только по HTTPS
+    SESSION_COOKIE_SAMESITE='None',   # разрешаем кросс-доменные куки
+    SESSION_COOKIE_HTTPONLY=True      # чтобы JS не мог изменить (рекомендация безопасности)
+)
+
 
 # Папка для загрузок
 UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
