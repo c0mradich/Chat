@@ -38,13 +38,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # -----------------------------
 # Инициализация DB и SocketIO
 # -----------------------------
-CORS(app, origins=[FRONTEND_URL], supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
 db.init_app(app)
 
 # Тут SocketIO и CORS вместе, больше ничего не надо
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[FRONTEND_URL],
+    cors_allowed_origins="*",
     async_mode='eventlet',
     max_http_buffer_size=50 * 1024 * 1024
 )
