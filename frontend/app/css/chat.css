@@ -126,13 +126,13 @@ body {
 .message.sent {
   background-color: #0078d4;
   color: white;
-  align-self: flex-start;
+  align-self: flex-end;
 }
 
 .message.received {
   background-color: #3c3c3c;
   color: white;
-  align-self: flex-end;
+  align-self: flex-start;
 }
 
 /* Ввод */
