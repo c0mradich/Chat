@@ -17,7 +17,7 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 def register_routes(app, socketio):
     @app.route('/')
     def home():
-        return "You are welcome!"
+        return render_template("WelcomePage.html")
 
 
     @app.route('/addUser', methods=["POST"])
