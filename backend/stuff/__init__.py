@@ -52,7 +52,7 @@ db.init_app(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins=[FRONTEND_URL],
-    async_mode='eventlet',
+    async_mode='threading',
     max_http_buffer_size=50 * 1024 * 1024
 )
 
