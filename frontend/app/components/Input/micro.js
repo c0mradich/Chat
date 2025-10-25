@@ -1,3 +1,5 @@
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+
 export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -14,13 +16,11 @@ export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
 
     const recorder = new MediaRecorder(stream, { mimeType });
 
-    // Передаем состояния наружу
     setMicStream(stream);
     setMicRecorder(recorder);
     setMimeType(mimeType);
 
-    // Стартуем с интервалом, чтобы не копить всё в памяти
-    recorder.start(1000); // раз в секунду отдаёт чанки
+    recorder.start(); // без интервала — пусть пишет цельный файл
   } catch (err) {
     console.error('Ошибка при включении микрофона:', err);
   }
@@ -29,51 +29,55 @@ export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
 export const stopMicro = async (
   micStream, micRecorder, mimeType,
   setMicStream, setMicRecorder, setMimeType,
-  handleSendMessage
+  handleSendMessage, sender, chatId
 ) => {
-  if (micRecorder && micRecorder.state !== 'inactive') {
-    const chunks = [];
+  if (!micRecorder || micRecorder.state === 'inactive') return;
 
-    await new Promise((resolve, reject) => {
-      micRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
+  const chunks = [];
 
-      micRecorder.onstop = () => {
-        try {
-          const blob = new Blob(chunks, { type: mimeType });
-          const reader = new FileReader();
+  await new Promise((resolve, reject) => {
+    micRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
 
-          reader.onloadend = () => {
-            const base64 = reader.result;
-            const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
-            handleSendMessage(
-              { file: base64, name: `audio_message.${ext}`, type: mimeType },
-              'send_file'
-            );
-            resolve();
-          };
+    micRecorder.onstop = async () => {
+      try {
+        const blob = new Blob(chunks, { type: mimeType });
+        const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const formData = new FormData();
 
-          reader.onerror = (err) => reject(err);
-          reader.readAsDataURL(blob);
-        } catch (err) {
-          reject(err);
-        }
-      };
+        formData.append('file', blob, `audio_message.${ext}`);
+        formData.append('chatId', chatId);
+        formData.append('sender', sender);
 
-      micRecorder.stop();
-    }).catch((err) => {
-      console.error('Ошибка при остановке записи:', err);
-    });
+        const res = await fetch(`${apiURL}/uploads`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
 
-    // Освобождаем ресурсы
-    if (micStream) {
-      micStream.getTracks().forEach(track => track.stop());
-      setMicStream(null);
-    }
-    setMicRecorder(null);
-    setMimeType(null);
+        const data = await res.json();
+        console.log('Upload result:', data);
+
+        handleSendMessage(
+          { path: data.path, name: `audio_message.${ext}`, type: mimeType },
+          'send_file'
+        );
+
+        resolve();
+      } catch (err) {
+        console.error('Ошибка при загрузке аудио:', err);
+        reject(err);
+      }
+    };
+
+    micRecorder.stop();
+  });
+
+  if (micStream) {
+    micStream.getTracks().forEach((track) => track.stop());
+    setMicStream(null);
   }
+  setMicRecorder(null);
+  setMimeType(null);
 };

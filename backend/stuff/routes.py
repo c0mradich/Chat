@@ -4,7 +4,6 @@ from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import get_or_create_chat
 from Python_Utils.mime import get_mime_type_from_extension
 from Python_Utils.func import generate_file_hash
-from flask_socketio import emit
 import base64, os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
@@ -26,6 +25,7 @@ def register_routes(app, socketio):
         data = request.get_json()
         name = data.get('name')
         password = data.get('password')
+
         hashed = generate_password_hash(password)
 
         # Проверка, существует ли пользователь

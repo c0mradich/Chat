@@ -9,8 +9,8 @@ from flask_cors import CORS
 # -----------------------------
 # Настройки окружения
 # -----------------------------
-FRONTEND_URL_TEST = os.environ.get("FRONTEND_URL", "https://chat-blond-iota.vercel.app")
-FRONTEND_URL = "https://chat-blond-iota.vercel.app"
+FRONTEND_URL_TEST = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = "http://localhost:3000"
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 
 # -----------------------------

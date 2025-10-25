@@ -34,13 +34,13 @@ body {
   background-color: #2a2a2a;
   padding: 20px;
   border-radius: 8px 0 0 8px;
-  
+  flex-shrink: 0;
 }
 
 .search-input {
   width: 100%;
   padding: 10px;
-  border-radius: 20px;
+  outline: 0;
   border: 1px solid #555;
   background-color: #333;
   color: white;
@@ -52,6 +52,7 @@ body {
 
 .search-container{
   display: flex;
+  align-items: center;
 }
 
 .user-list {
@@ -90,6 +91,9 @@ body {
   font-weight: bold;
   margin-bottom: 20px;
   color: #ddd;
+  background-color: #2a2a2a;
+  width: 100%;
+  padding: 15px;
 }
 
 /* Сообщения */
@@ -147,11 +151,17 @@ body {
 .chat-input input {
   flex-grow: 1;
   padding: 12px;
-  border-radius: 20px;
-  border: 1px solid #555;
   font-size: 16px;
-  background-color: #333;
   color: white;
+  outline: none;
+}
+
+.input-layer{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  width: 100%;
+  background-color: #2a2a2a;
 }
 
 .input-buttons {
@@ -160,14 +170,14 @@ body {
 }
 
 .input-buttons button {
-  background-color: #444;
+  background-color: transparent;
   color: white;
   border: none;
   padding: 10px;
-  border-radius: 50%;
   font-size: 18px;
   cursor: pointer;
   transition: background-color 0.2s;
+  border-radius: 50%;
 }
 
 .input-buttons button:hover {

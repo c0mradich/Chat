@@ -1,11 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './css/chat.css'; // Импорт стилей
 import { Progress, ChatHeader, redirect, leave} from './components/components';
 import { Sidebar, User_List, filteredUsers, useHandleUserClick, fetchUsers } from "./components/Input/Sidebar"
 import {Messages} from "./components/Input/Messages"
 import { InputField } from './components/Input/InputField';
-import {InputButtons} from "./components/Input/InputfButtons"
 import { fetchMessages } from './components/Backend/fetchMessages';
 import fetchChatId from './components/Backend/fetchChatId';
 import { useChat } from './components/Backend/useChat';
@@ -29,6 +28,8 @@ function Home() {
   const [chatsInfo, setChatsInfo] = useState([])
   const [currentChatInfo, setCurrentChatInfo] = useState({})
   const [sideBarOpen, setSideBarOpen] = useState(true)
+  const [dialogButtons, setDialogButtons] = useState(0)
+  const messagesWindow = useRef(null)
 // после всех useState:
 const { sendMessage: wsSendMessage } = useChat(
   chatId,
@@ -82,6 +83,9 @@ useEffect(() => {
 }, [currentChat, name]);
 
 useEffect(() => {
+  if (messagesWindow.current) {
+      messagesWindow.current.scrollTop = containerRef.current.scrollHeight;
+  }
   if (!chatId) return;
   (async () => {
     const history = await fetchMessages(chatId);
@@ -127,7 +131,8 @@ if (typeof window !== 'undefined') {
        {currentChat && (
       <div className="chat-area">
       <ChatHeader currentChat={currentChat} setSideBarOpen={setSideBarOpen} sideBarOpen={sideBarOpen}/>
-      <Messages 
+      <Messages
+        ref={messagesWindow}
         messages={messages}
         name={name} 
         handleSendMessage={wsSendMessage} 
@@ -139,17 +144,14 @@ if (typeof window !== 'undefined') {
           <InputField
             newMessage={newMessage}
             setNewMessage={setNewMessage}
+            displayButtons={setDialogButtons}
             handleSendMessage={wsSendMessage}
             editingMsgId={editingMsgId}
             setEditingMsgId={setEditingMsgId}
-          />
-
-          <InputButtons
-            newMessage={newMessage}
-            setNewMessage={setNewMessage}
-            handleSendMessage={wsSendMessage}
-            sender={name}
+            wsSendMessage={wsSendMessage}
+            name={name}
             chatId={chatId}
+            displayButtonsIndex={dialogButtons}
           />
         </div>
       </div>
