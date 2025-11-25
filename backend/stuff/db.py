@@ -1,12 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+
 db = SQLAlchemy()
-from datetime import datetime
 
 class User(db.Model):
     __tablename__ = 'users'
     _id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)  # можно 150, если нужно
     password = db.Column(db.String(512), nullable=False)
     messages = db.relationship('Message', back_populates='sender', lazy=True)
     isActive = db.Column(db.Boolean, default=False)
@@ -20,7 +20,7 @@ class Chat(db.Model):
     __tablename__ = 'chats'
     _id = db.Column(db.Integer, primary_key=True)
     is_group = db.Column(db.Boolean, default=False)
-    name = db.Column(db.String(100))  # имя группы, если это группа
+    name = db.Column(db.String(255))  # имя группы, если это группа
     creator_id = db.Column(db.Integer, db.ForeignKey('users._id'))
 
     participants = db.relationship('ChatParticipant', backref='chat', cascade='all, delete-orphan')
@@ -37,7 +37,7 @@ class Message(db.Model):
     _id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chats._id'), nullable=False)
     sender_id = db.Column(db.Integer, db.ForeignKey('users._id'), nullable=False)
-    text = db.Column(db.String(1000), nullable=False)
+    text = db.Column(db.Text, nullable=False)  # Text вместо String
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     sender = db.relationship('User', back_populates='messages')
