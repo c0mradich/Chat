@@ -6,7 +6,6 @@ from .WebSocket import register_socket_handlers
 from .routes import register_routes
 from flask_cors import CORS
 
-
 # -----------------------------
 # Настройки окружения
 # -----------------------------

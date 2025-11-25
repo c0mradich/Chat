@@ -7,7 +7,7 @@ class User(db.Model):
     __tablename__ = 'users'
     _id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(512), nullable=False)
     messages = db.relationship('Message', back_populates='sender', lazy=True)
     isActive = db.Column(db.Boolean, default=False)
 
