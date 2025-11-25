@@ -6,6 +6,7 @@ from .WebSocket import register_socket_handlers
 from .routes import register_routes
 from flask_cors import CORS
 
+
 # -----------------------------
 # Настройки окружения
 # -----------------------------
@@ -57,7 +58,7 @@ db.init_app(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins=[FRONTEND_URL],
-    async_mode='threading',
+    async_mode='eventlet',   # <--- меняем с threading на eventlet
     max_http_buffer_size=50 * 1024 * 1024
 )
 
@@ -70,5 +71,20 @@ register_routes(app, socketio)
 # -----------------------------
 # Запуск (только при прямом старте)
 # -----------------------------
+# -----------------------------
+# Запуск (только при прямом старте)
+# -----------------------------
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    import eventlet
+    import eventlet.wsgi
+
+    # Меняем async_mode на 'eventlet'
+    socketio.async_mode = 'eventlet'
+
+    # Для учебного проекта: безопасный сервер на Render
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=True  # можно ставить False на проде
+    )
