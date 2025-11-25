@@ -48,3 +48,4 @@ If ports 3000 or 5000 are busy, change them in docker-compose.yml.
 If you make changes to backend or frontend dependencies, rebuild images:
 
 docker-compose up --build
+x

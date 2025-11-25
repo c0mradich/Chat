@@ -10,8 +10,9 @@ from flask_cors import CORS
 # Настройки окружения
 # -----------------------------
 FRONTEND_URL_TEST = os.environ.get("FRONTEND_URL", "http://localhost:3000")
-FRONTEND_URL = "http://localhost:3000"
+FRONTEND_URL = os.environ.get("FRONTEND_URL", FRONTEND_URL_TEST)
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Postgres URL из Render
 
 # -----------------------------
 # Инициализация приложения
@@ -20,26 +21,31 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
 # -----------------------------
-# Настройка папок для БД и загрузок
+# Настройка базы данных
 # -----------------------------
-basedir = os.path.abspath(os.path.dirname(__file__))
+if DATABASE_URL:
+    # Для Postgres на Render
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    # fallback локально (SQLite)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    db_dir = os.path.join(basedir, '..', '..', 'instance')
+    os.makedirs(db_dir, exist_ok=True)
+    db_path = os.path.join(db_dir, 'users.sqlite3')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 
-# База данных
-db_dir = os.path.join(basedir, '..', '..', 'instance')
-os.makedirs(db_dir, exist_ok=True)
-db_path = os.path.join(db_dir, 'users.sqlite3')
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config.update(
-    SESSION_COOKIE_SECURE=True,       # куки только по HTTPS
-    SESSION_COOKIE_SAMESITE='None',   # разрешаем кросс-доменные куки
-    SESSION_COOKIE_HTTPONLY=True      # чтобы JS не мог изменить (рекомендация безопасности)
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_HTTPONLY=True
 )
 
-
+# -----------------------------
 # Папка для загрузок
-UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+# -----------------------------
+UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # -----------------------------
@@ -48,14 +54,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
 db.init_app(app)
 
-# Тут SocketIO и CORS вместе, больше ничего не надо
 socketio = SocketIO(
     app,
     cors_allowed_origins=[FRONTEND_URL],
     async_mode='threading',
     max_http_buffer_size=50 * 1024 * 1024
 )
-
 
 # -----------------------------
 # Роуты и Socket обработчики

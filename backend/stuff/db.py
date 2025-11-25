@@ -6,7 +6,7 @@ from datetime import datetime
 class User(db.Model):
     __tablename__ = 'users'
     _id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
     messages = db.relationship('Message', back_populates='sender', lazy=True)
     isActive = db.Column(db.Boolean, default=False)
@@ -14,6 +14,22 @@ class User(db.Model):
     def __init__(self, name, password):
         self.name = name
         self.password = password
+
+
+class Chat(db.Model):
+    __tablename__ = 'chats'
+    _id = db.Column(db.Integer, primary_key=True)
+    is_group = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(100))  # имя группы, если это группа
+    creator_id = db.Column(db.Integer, db.ForeignKey('users._id'))
+
+    participants = db.relationship('ChatParticipant', backref='chat', cascade='all, delete-orphan')
+    messages = db.relationship('Message', backref='chat', lazy=True)
+
+    def __init__(self, is_group=False, name=None, creator_id=None):
+        self.is_group = is_group
+        self.name = name
+        self.creator_id = creator_id
 
 
 class Message(db.Model):
@@ -31,23 +47,6 @@ class Message(db.Model):
         self.sender_id = sender_id
         self.text = text
         self.timestamp = timestamp or datetime.utcnow()
-
-
-class Chat(db.Model):
-    __tablename__ = 'chats'
-    _id = db.Column(db.Integer, primary_key=True)
-    is_group = db.Column(db.Boolean, default=False)
-    name = db.Column(db.String(100))  # имя группы, если это группа
-    creator_id = db.Column(db.Integer, db.ForeignKey('users._id'))
-
-    participants = db.relationship('ChatParticipant', backref='chat', cascade='all, delete-orphan')
-    messages = db.relationship('Message', backref='chat', lazy=True)
-    
-    def __init__(self, is_group=False, name=None, creator_id=None):
-        self.is_group = is_group
-        self.name = name
-        self.creator_id = creator_id
-
 
 
 class ChatParticipant(db.Model):

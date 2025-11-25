@@ -1,7 +1,7 @@
 from flask_socketio import join_room, leave_room, emit
 from flask import request
 from .db import db, Message, User, ChatParticipant, Chat
-import hashlib, os
+import hashlib, os, time
 from datetime import datetime
 import base64
 from Python_Utils.mime import get_mime_type_from_extension
@@ -22,14 +22,30 @@ def register_socket_handlers(socketio):
     @socketio.on('join')
     def on_join(data):
         try:
-            name = data['name']
-            r.set(f'user:{name}', request.sid)
-            sid_bytes = r.get(f'user:{name}')
-        except Exception as e:
-            print(e)
+            name = data.get('name')
+            chat_id = data.get('chat_id')
+            sid = request.sid
 
-        chat_id = data['chat_id']
-        join_room(chat_id)
+            if not name or not chat_id:
+                print("⚠️ join пропущен — нет name или chat_id")
+                return
+
+            # сохраняем связку user -> sid
+            r.set(f"user:{name}", sid)
+
+            # небольшая пауза, чтобы гарантировать, что клиент зарегистрирован
+            time.sleep(0.05)
+
+            # добавляем в комнату
+            join_room(chat_id)
+            print(f"✅ {name} ({sid}) вошёл в комнату {chat_id}")
+
+            # опционально можно уведомить комнату
+            emit("user_joined", {"user": name}, room=chat_id)
+
+        except Exception as e:
+            print(f"❌ Ошибка в on_join: {e}")
+
 
     @socketio.on('leave')
     def on_leave(data):
