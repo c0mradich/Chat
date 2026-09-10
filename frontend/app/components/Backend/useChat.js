@@ -8,99 +8,112 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
   const socketRef = useRef();
   const [socket, setSocket] = useState(null);
 
-  useEffect(() => {
-    // 1) Подключаемся
-    const newSocket = io(`${apiURL}`, {
-      withCredentials: true,
-    });
-
-    socketRef.current = newSocket;
-    setSocket(newSocket);
-
-    socketRef.current.on('connect', () => {
-      // 2) Входим в комнату
-      socketRef.current.emit('join', { chat_id: chatId, name: name });
-    });
-
-    // 3) Слушаем входящие
-    socketRef.current.on('receive_message', (msg) => {
-      console.log(msg)
-      onMessage(msg); // например, setMessages(prev => [...prev, msg])
-    });
-
-    socketRef.current.on('deleted_message', (msg)=>{
-      onDeleteMessage(msg.id)
-    })
-    socketRef.current.on('edit_msg', (msg)=>{
-      onEditMessage(msg)
-    })
-
-
-socketRef.current.on("add_user", (msg)=>{
-  const user = {
-    name: msg.name,
-    id: msg.id,
-    isGroup: false,
-    chatParticipants: [msg.name, name]
+useEffect(() => {
+  if (!chatId || !name) {
+    return;
   }
-  setUsers(prev=>[...prev, user])
-  setChatsInfo(prev=>[...prev, user])
-})
 
+  const newSocket = io(apiURL, {
+    withCredentials: true,
+  });
 
-socketRef.current.on('changeUser', (msg) => {
-  const { name, oldName } = msg;
-  let i = 0;
+  socketRef.current = newSocket;
+  setSocket(newSocket);
 
-  setUsers((prevUsers) =>
-    prevUsers.map((user) => {
-      if (user.name === oldName) {
-        i++;
-        return { ...user, name };
+  newSocket.on('connect', () => {
+    console.log('🟢 SOCKET CONNECTED:', newSocket.id);
+
+    newSocket.emit('join', {
+      chat_id: chatId,
+      name: name,
+    });
+  });
+
+  newSocket.on('receive_message', (msg) => {
+    console.log('📨 RECEIVED:', msg);
+    onMessage(msg);
+  });
+
+  newSocket.on('deleted_message', (msg) => {
+    onDeleteMessage(msg.id);
+  });
+
+  newSocket.on('edit_msg', (msg) => {
+    onEditMessage(msg);
+  });
+
+  newSocket.on('add_user', (msg) => {
+    const user = {
+      name: msg.name,
+      id: msg.id,
+      isGroup: false,
+      chatParticipants: [msg.name, name],
+    };
+
+    setUsers(prev => [...prev, user]);
+    setChatsInfo(prev => [...prev, user]);
+  });
+
+  newSocket.on('changeUser', (msg) => {
+    const { name: newName, oldName } = msg;
+    let i = 0;
+
+    setUsers(prevUsers =>
+      prevUsers.map(user => {
+        if (user.name === oldName) {
+          i++;
+          return { ...user, name: newName };
+        }
+        return user;
+      })
+    );
+
+    if (i === 0) {
+      newSocket.emit('changeUser', {
+        name: newName,
+        oldName: oldName,
+      });
+    }
+  });
+
+  newSocket.on('get_user_chats', (msg) => {
+    const arr = [];
+    const currentUserName = msg.name;
+
+    for (const chat of msg.chats) {
+      let chatName = chat.name;
+
+      if (!chat.is_group && chat.participants.length === 2) {
+        const otherName = chat.participants.find(
+          p => p !== currentUserName
+        );
+        chatName = otherName;
       }
-      return user;
-    })
-  );
 
-  if (i === 0) {
-    socketRef.current.emit("changeUser", {"name": name, "oldName": oldName})
-  }
-});
-
-socketRef.current.on('get_user_chats', (msg) => {
-  const arr = [];
-  const currentUserName = msg.name
-
-  for (const chat of msg.chats) {
-    let chatName = chat.name;
-
-    // Если это не группа и два участника — показать имя собеседника
-    if (!chat.is_group && chat.participants.length === 2) {
-      const otherName = chat.participants.find(p => p !== currentUserName);
-      chatName = otherName
+      arr.push({
+        id: chat.id,
+        name: chatName,
+        isGroup: chat.is_group,
+        chatParticipants: chat.participants,
+      });
     }
 
-    arr.push({
-      id: chat.id,
-      name: chatName,
-      isGroup: chat.is_group,
-      chatParticipants: chat.participants
-    });
-  }
+    setUsers(prev => [...prev, ...arr]);
+    setChatsInfo(prev => [...prev, ...arr]);
+    setLoading(false);
+  });
 
-  
-  setUsers(prev=>[...prev, ...arr])
-  setChatsInfo(prev=>[...prev, ...arr])
-  setLoading(false);
-});
+  return () => {
+    if (newSocket.connected) {
+      newSocket.emit('leave', {
+        chat_id: chatId,
+        name: name,
+      });
+    }
 
-
-    return () => {
-      // 4) Очищаем
-      socketRef.current.emit('leave', { chat_id: chatId, name: name });
-      socketRef.current.disconnect();
-    };
-  }, [chatId]);
+    newSocket.disconnect();
+  };
+}, [chatId, name]);
 
   // Функция для отправки
   const sendMessage = (text, path) => {
