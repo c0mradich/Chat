@@ -9,7 +9,7 @@ export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage,
   const [socket, setSocket] = useState(null);
 
 useEffect(() => {
-  if (!chatId || !name) {
+  if (!name) {
     return;
   }
 
@@ -23,10 +23,12 @@ useEffect(() => {
   newSocket.on('connect', () => {
     console.log('🟢 SOCKET CONNECTED:', newSocket.id);
 
-    newSocket.emit('join', {
-      chat_id: chatId,
-      name: name,
-    });
+    if (chatId) {
+      newSocket.emit('join', {
+        chat_id: chatId,
+        name: name,
+      });
+    }
   });
 
   newSocket.on('receive_message', (msg) => {
@@ -116,14 +118,20 @@ useEffect(() => {
 }, [chatId, name]);
 
   // Функция для отправки
-  const sendMessage = (text, path) => {
-    console.log("File: ", text, "path", path)
-    socketRef.current.emit(path, {
-      chat_id: chatId,
-      sender: name,
-      text
-    });
-  };
+const sendMessage = (text, path) => {
+  console.log("File:", text, "path", path);
+
+  if (!socketRef.current?.connected) {
+    console.log("❌ Socket not connected");
+    return;
+  }
+
+  socketRef.current.emit(path, {
+    chat_id: chatId,
+    sender: name,
+    text
+  });
+};
 
 return {
   sendMessage,
