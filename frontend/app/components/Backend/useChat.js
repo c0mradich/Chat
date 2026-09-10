@@ -19,11 +19,15 @@ export function useChat(
   const [socketConnected, setSocketConnected] = useState(false);
   const previousChatIdRef = useRef(null);
 
-  // Create Socket
+  // =========================
+  // CREATE SOCKET
+  // =========================
   useEffect(() => {
     if (!name) {
       return;
     }
+
+    console.log('🔌 Creating Socket.IO connection');
 
     const newSocket = io(apiURL, {
       withCredentials: true,
@@ -32,35 +36,41 @@ export function useChat(
     socketRef.current = newSocket;
     setSocket(newSocket);
 
-    // Connect
+    // CONNECT
     newSocket.on('connect', () => {
       console.log('🟢 SOCKET CONNECTED:', newSocket.id);
       setSocketConnected(true);
     });
 
-    // Disconnect
+    // DISCONNECT
     newSocket.on('disconnect', () => {
       console.log('🔴 SOCKET DISCONNECTED');
       setSocketConnected(false);
     });
 
-    // Receive message
+    // =========================
+    // MESSAGES
+    // =========================
+
     newSocket.on('receive_message', (msg) => {
       console.log('📨 RECEIVED:', msg);
       onMessage(msg);
     });
 
-    // Delete message
+    // DELETE MESSAGE
     newSocket.on('deleted_message', (msg) => {
       onDeleteMessage(msg.id);
     });
 
-    // Edit message
+    // EDIT MESSAGE
     newSocket.on('edit_msg', (msg) => {
       onEditMessage(msg);
     });
 
-    // Add user
+    // =========================
+    // ADD USER
+    // =========================
+
     newSocket.on('add_user', (msg) => {
       const user = {
         name: msg.name,
@@ -69,35 +79,38 @@ export function useChat(
         chatParticipants: [msg.name, name],
       };
 
-      setUsers(prev => [...prev, user]);
-      setChatsInfo(prev => [...prev, user]);
+      setUsers((prev) => [...prev, user]);
+      setChatsInfo((prev) => [...prev, user]);
     });
 
-    // Change user
+    // =========================
+    // CHANGE USER
+    // =========================
+
     newSocket.on('changeUser', (msg) => {
       const { name: newName, oldName } = msg;
-      let i = 0;
 
-      setUsers(prevUsers =>
-        prevUsers.map(user => {
+      setUsers((prevUsers) =>
+        prevUsers.map((user) => {
           if (user.name === oldName) {
-            i++;
-            return { ...user, name: newName };
+            return {
+              ...user,
+              name: newName,
+            };
           }
+
           return user;
         })
       );
-
-      if (i === 0) {
-        newSocket.emit('changeUser', {
-          name: newName,
-          oldName: oldName,
-        });
-      }
     });
 
-    // Get user chats
+    // =========================
+    // GET USER CHATS
+    // =========================
+
     newSocket.on('get_user_chats', (msg) => {
+      console.log('💬 GET USER CHATS:', msg);
+
       const arr = [];
       const currentUserName = msg.name;
 
@@ -106,8 +119,9 @@ export function useChat(
 
         if (!chat.is_group && chat.participants.length === 2) {
           const otherName = chat.participants.find(
-            p => p !== currentUserName
+            (p) => p !== currentUserName
           );
+
           chatName = otherName;
         }
 
@@ -119,12 +133,17 @@ export function useChat(
         });
       }
 
+      // IMPORTANT:
+      // replace, don't append
       setUsers(arr);
       setChatsInfo(arr);
       setLoading(false);
     });
 
-    // Cleanup Socket
+    // =========================
+    // CLEANUP
+    // =========================
+
     return () => {
       console.log('🧹 CLEANUP SOCKET');
 
@@ -139,7 +158,10 @@ export function useChat(
     };
   }, [name]);
 
-  // Join / Leave chat
+  // =========================
+  // JOIN / LEAVE CHAT
+  // =========================
+
   useEffect(() => {
     const currentSocket = socketRef.current;
 
@@ -147,12 +169,15 @@ export function useChat(
       return;
     }
 
-    // Leave previous chat
+    // LEAVE PREVIOUS CHAT
     if (
       previousChatIdRef.current &&
       previousChatIdRef.current !== chatId
     ) {
-      console.log('🚪 LEAVE CHAT:', previousChatIdRef.current);
+      console.log(
+        '🚪 LEAVE CHAT:',
+        previousChatIdRef.current
+      );
 
       currentSocket.emit('leave', {
         chat_id: previousChatIdRef.current,
@@ -160,7 +185,7 @@ export function useChat(
       });
     }
 
-    // Join new chat
+    // JOIN NEW CHAT
     if (chatId) {
       console.log('🚪 JOIN CHAT:', chatId);
 
@@ -175,19 +200,24 @@ export function useChat(
     }
   }, [chatId, name, socketConnected]);
 
-  // Send message
+  // =========================
+  // SEND MESSAGE / FILE / OTHER EVENTS
+  // =========================
+
   const sendMessage = (text, path) => {
     console.log('File:', text, 'path', path);
 
-    if (!socketRef.current?.connected) {
+    const currentSocket = socketRef.current;
+
+    if (!currentSocket || !currentSocket.connected) {
       console.log('❌ Socket not connected');
       return;
     }
 
-    socketRef.current.emit(path, {
+    currentSocket.emit(path, {
       chat_id: chatId,
       sender: name,
-      text,
+      text: text,
     });
   };
 
