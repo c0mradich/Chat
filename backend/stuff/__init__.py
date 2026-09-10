@@ -37,9 +37,9 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config.update(
-    SESSION_COOKIE_SECURE=False,
-    SESSION_COOKIE_SAMESITE='Lax',
-    SESSION_COOKIE_HTTPONLY=False
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_HTTPONLY=True
 )
 
 # -----------------------------
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     socketio.run(
         app,
         host='0.0.0.0',
-        port=5000,
-        debug=True  # можно ставить False на проде
+        port=int(os.environ.get('PORT', 5000)),
+        debug=False,
+        allow_unsafe_werkzeug=True
     )
