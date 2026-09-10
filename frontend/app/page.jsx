@@ -34,7 +34,8 @@ function Home() {
 // после всех useState:
 const {
   sendMessage: wsSendMessage,
-  socket: wsSocket
+  socket: wsSocket,
+  socketConnected
 } = useChat(
   chatId,
   name,
@@ -49,6 +50,12 @@ const {
   users
 );
 
+useEffect(() => {
+  if (!name || !socketConnected) return;
+
+  fetchUsers(name, wsSendMessage);
+}, [name, socketConnected]);
+
 const {
   startCall,
   endCall,
@@ -58,13 +65,17 @@ const {
 
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз
+
+
 useEffect(() => {
   async function checkAuthAndFetch() {
-    const user_name = await redirect(setName);
-    fetchUsers(user_name, wsSendMessage);
+    await redirect(setName);
   }
+
   checkAuthAndFetch();
 }, []);
+
+
 
 // 2) Обновление фильтрованных пользователей при изменении зависимостей
 useEffect(() => {
@@ -88,6 +99,8 @@ useEffect(() => {
     setCurrentChatInfo(null);
   }
 }, [FilteredUsers]);
+
+
 
 
 useEffect(() => {

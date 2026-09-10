@@ -7,6 +7,9 @@ const apiURL = process.env.NEXT_PUBLIC_API_URL
 export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage, setUsers, setLoading, setChatsInfo, users) {
   const socketRef = useRef();
   const [socket, setSocket] = useState(null);
+  const [socketConnected, setSocketConnected] = useState(false);
+
+  setSocketConnected(false);
 
 useEffect(() => {
   if (!name) {
@@ -23,12 +26,18 @@ useEffect(() => {
   newSocket.on('connect', () => {
     console.log('🟢 SOCKET CONNECTED:', newSocket.id);
 
+    setSocketConnected(true);
+
     if (chatId) {
       newSocket.emit('join', {
         chat_id: chatId,
         name: name,
       });
     }
+  });
+
+  newSocket.on('disconnect', () => {
+    setSocketConnected(false);
   });
 
   newSocket.on('receive_message', (msg) => {
@@ -135,6 +144,7 @@ const sendMessage = (text, path) => {
 
 return {
   sendMessage,
-  socket
+  socket,
+  socketConnected
 };
 }
