@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL
@@ -6,12 +6,16 @@ const apiURL = process.env.NEXT_PUBLIC_API_URL
 
 export function useChat(chatId, name, onMessage, onDeleteMessage, onEditMessage, setUsers, setLoading, setChatsInfo, users) {
   const socketRef = useRef();
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     // 1) Подключаемся
-    socketRef.current = io(`${apiURL}`, {
+    const newSocket = io(`${apiURL}`, {
       withCredentials: true,
     });
+
+    socketRef.current = newSocket;
+    setSocket(newSocket);
 
     socketRef.current.on('connect', () => {
       // 2) Входим в комнату
@@ -108,5 +112,8 @@ socketRef.current.on('get_user_chats', (msg) => {
     });
   };
 
-  return { sendMessage };
+return {
+  sendMessage,
+  socket
+};
 }

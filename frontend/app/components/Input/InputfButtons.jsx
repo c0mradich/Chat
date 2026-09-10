@@ -2,7 +2,7 @@ import {useState, useRef} from "react"
 import { stopMicro, startMicro } from "./micro";
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
-export function InputButtons({ newMessage, setNewMessage, handleSendMessage, sender, chatId, displayButtonsIndex }) {
+export function InputButtons({ newMessage, setNewMessage, handleSendMessage, sender, chatId, displayButtonsIndex, startCall, endCall, inCall }) {
   const [micStream, setMicStream] = useState(null);
   const [micRecorder, setMicRecorder] = useState(null);
   const [mimeType, setMimeType] = useState(null)
@@ -59,6 +59,14 @@ return (
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
+
+        <button
+          className="call-btn"
+          onClick={inCall ? endCall : startCall}
+        >
+          {inCall ? '🔴' : '📞'}
+        </button>
+
           <button className="video-call-btn">📹</button>
           {micStream ? (
             <button
@@ -88,6 +96,7 @@ return (
             </button>
           )}
           <button className="file-input-btn" onClick={inputFile}>📎</button>
+
         </div>
       )
     }

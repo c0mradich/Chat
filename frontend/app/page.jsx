@@ -8,6 +8,7 @@ import { InputField } from './components/Input/InputField';
 import { fetchMessages } from './components/Backend/fetchMessages';
 import fetchChatId from './components/Backend/fetchChatId';
 import { useChat } from './components/Backend/useChat';
+import { useCall } from './components/Backend/useCall';
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
@@ -31,14 +32,30 @@ function Home() {
   const [dialogButtons, setDialogButtons] = useState(0)
   const messagesWindow = useRef(null)
 // после всех useState:
-const { sendMessage: wsSendMessage } = useChat(
+const {
+  sendMessage: wsSendMessage,
+  socket: wsSocket
+} = useChat(
   chatId,
   name,
   (msg) => setMessages(prev => [...prev, msg]),
   (id) => setMessages(prev => prev.filter(msg => msg.id !== id)),
-  (msg) => setMessages(prev => {return prev.map(m => m.id === msg.id ? { ...m, text: msg.text } : m)}),
-  setUsers, setLoading, setChatsInfo, users
-)
+  (msg) => setMessages(prev =>
+    prev.map(m => m.id === msg.id ? { ...m, text: msg.text } : m)
+  ),
+  setUsers,
+  setLoading,
+  setChatsInfo,
+  users
+);
+
+const {
+  startCall,
+  endCall,
+  callStream,
+  inCall
+} = useCall(wsSocket, chatId, name);
+
   // Получаем пользователей при загрузке компонента
 // 1) Загрузка данных и авторизация — один раз
 useEffect(() => {
@@ -84,7 +101,8 @@ useEffect(() => {
 
 useEffect(() => {
   if (messagesWindow.current) {
-      messagesWindow.current.scrollTop = containerRef.current.scrollHeight;
+      messagesWindow.current.scrollTop =
+          messagesWindow.current.scrollHeight;
   }
   if (!chatId) return;
   (async () => {
@@ -93,12 +111,29 @@ useEffect(() => {
   })();
 }, [chatId]);
 
+// Call audio element for call stream
+const audioRef = useRef(null);
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon(`${apiURL}/leave`, JSON.stringify({ name }));
-  });
-}
+useEffect(() => {
+  if (audioRef.current && callStream) {
+    audioRef.current.srcObject = callStream;
+  }
+}, [callStream]);
+
+useEffect(() => {
+  const handleBeforeUnload = () => {
+    navigator.sendBeacon(
+      `${apiURL}/leave`,
+      JSON.stringify({ name })
+    );
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+}, [name]);
 
 
   return (
@@ -152,8 +187,12 @@ if (typeof window !== 'undefined') {
             name={name}
             chatId={chatId}
             displayButtonsIndex={dialogButtons}
+            startCall={startCall}
+            endCall={endCall}
+            inCall={inCall}
           />
         </div>
+        <audio ref={audioRef} autoPlay />
       </div>
        )}
     </div>

@@ -1,6 +1,19 @@
 import { InputButtons } from "./InputfButtons";
-export function InputField({ newMessage, setNewMessage, handleSendMessage, editingMsgId, setEditingMsgId, wsSendMessage, name, chatId, displayButtons, displayButtonsIndex }) {
-  const onKeyDown = (e) => {
+export function InputField({
+  newMessage,
+  setNewMessage,
+  handleSendMessage,
+  editingMsgId,
+  setEditingMsgId,
+  wsSendMessage,
+  name,
+  chatId,
+  displayButtons,
+  displayButtonsIndex,
+  startCall,
+  endCall,
+  inCall
+}){  const onKeyDown = (e) => {
     if (e.key === 'Enter' && newMessage.trim()) {
       if (editingMsgId !== null) {
         // редактирование
@@ -38,6 +51,9 @@ export function InputField({ newMessage, setNewMessage, handleSendMessage, editi
         sender={name}
         chatId={chatId}
         displayButtonsIndex={displayButtonsIndex}
+        startCall={startCall}
+        endCall={endCall}
+        inCall={inCall}
       />
     </div>
   );

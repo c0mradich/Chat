@@ -60,7 +60,7 @@ def register_socket_handlers(socketio):
             print("Ошибка: 'chat_id' отсутствует в данных leave")
             return
 
-        r.delete(name)
+        r.delete(f"user:{name}")
         leave_room(chat_id)
 
 
@@ -338,4 +338,121 @@ def register_socket_handlers(socketio):
                 print(f"Redis: старый ключ {old_key} не найден")
         except Exception as e:
             print(e)
+
+        # ==========================================
+    # WEBRTC CALL SIGNALING
+    # ==========================================
+
+    @socketio.on("call_offer")
+    def handle_call_offer(data):
+        try:
+            chat_id = data.get("chat_id")
+            sender = data.get("sender")
+            offer = data.get("offer")
+
+            if not chat_id or not sender or not offer:
+                print("❌ call_offer: missing data")
+                return
+
+            print(
+                f"📞 CALL OFFER: {sender} -> chat {chat_id}"
+            )
+
+            # Отправляем offer всем в комнате,
+            # кроме того, кто его отправил
+            emit(
+                "call_offer",
+                {
+                    "sender": sender,
+                    "offer": offer
+                },
+                room=chat_id,
+                include_self=False
+            )
+
+        except Exception as e:
+            print(f"❌ Ошибка call_offer: {e}")
+
+
+    @socketio.on("call_answer")
+    def handle_call_answer(data):
+        try:
+            chat_id = data.get("chat_id")
+            sender = data.get("sender")
+            answer = data.get("answer")
+
+            if not chat_id or not sender or not answer:
+                print("❌ call_answer: missing data")
+                return
+
+            print(
+                f"📞 CALL ANSWER: {sender} -> chat {chat_id}"
+            )
+
+            emit(
+                "call_answer",
+                {
+                    "sender": sender,
+                    "answer": answer
+                },
+                room=chat_id,
+                include_self=False
+            )
+
+        except Exception as e:
+            print(f"❌ Ошибка call_answer: {e}")
+
+
+    @socketio.on("call_ice_candidate")
+    def handle_call_ice_candidate(data):
+        try:
+            chat_id = data.get("chat_id")
+            sender = data.get("sender")
+            candidate = data.get("candidate")
+
+            if not chat_id or not sender or not candidate:
+                print("❌ call_ice_candidate: missing data")
+                return
+
+            emit(
+                "call_ice_candidate",
+                {
+                    "sender": sender,
+                    "candidate": candidate
+                },
+                room=chat_id,
+                include_self=False
+            )
+
+        except Exception as e:
+            print(
+                f"❌ Ошибка call_ice_candidate: {e}"
+            )
+
+
+    @socketio.on("call_end")
+    def handle_call_end(data):
+        try:
+            chat_id = data.get("chat_id")
+            sender = data.get("sender")
+
+            if not chat_id or not sender:
+                print("❌ call_end: missing data")
+                return
+
+            print(
+                f"📞 CALL END: {sender} -> chat {chat_id}"
+            )
+
+            emit(
+                "call_end",
+                {
+                    "sender": sender
+                },
+                room=chat_id,
+                include_self=False
+            )
+
+        except Exception as e:
+            print(f"❌ Ошибка call_end: {e}")
 

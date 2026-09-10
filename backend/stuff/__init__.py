@@ -37,9 +37,9 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_SAMESITE='None',
-    SESSION_COOKIE_HTTPONLY=True
+    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_COOKIE_HTTPONLY=False
 )
 
 # -----------------------------
@@ -57,8 +57,10 @@ db.init_app(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins=[FRONTEND_URL],
-    async_mode='eventlet',   # <--- меняем с threading на eventlet
-    max_http_buffer_size=50 * 1024 * 1024
+    async_mode='threading',
+    max_http_buffer_size=50 * 1024 * 1024,
+    logger=True,
+    engineio_logger=True
 )
 
 # -----------------------------
@@ -74,13 +76,6 @@ register_routes(app, socketio)
 # Запуск (только при прямом старте)
 # -----------------------------
 if __name__ == '__main__':
-    import eventlet
-    import eventlet.wsgi
-
-    # Меняем async_mode на 'eventlet'
-    socketio.async_mode = 'eventlet'
-
-    # Для учебного проекта: безопасный сервер на Render
     socketio.run(
         app,
         host='0.0.0.0',

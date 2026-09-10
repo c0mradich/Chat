@@ -30,6 +30,20 @@ export default function PersonalSettings() {
     fetchName();
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Enter") {
+        handleSave();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const handleSave = async () => {
     if(name!==data.name && name.length>3){
     setSaving(true);
@@ -49,6 +63,8 @@ export default function PersonalSettings() {
     }
   };
     }
+
+
 
   if (loading) return <div>Загрузка...</div>;
 
