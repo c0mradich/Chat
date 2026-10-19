@@ -128,7 +128,7 @@ def register_routes(app, socketio):
             for msg in messages:
                 msg_dict = {
                     "id": msg._id,
-                    "sender": msg.sender.name,
+                    "sender": msg.sender.name if msg.sender else None,
                     "text": msg.text,
                     "timestamp": msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 }

@@ -12,8 +12,8 @@ function SignIn() {
 
   const validate = () => {
     const newErrors = {};
-    if (!name.trim()) newErrors.name = 'Имя обязательно';
-    if (!password.trim()) newErrors.password = 'Пароль обязателен';
+    if (!name.trim()) newErrors.name = 'Name is required';
+    if (!password.trim()) newErrors.password = 'Password is required';
     return newErrors;
   };
 
@@ -29,12 +29,12 @@ function SignIn() {
       const text = await res.text();
       const data = text ? JSON.parse(text) : null;
 
-      if (!data) throw new Error('Сервер вернул пустой ответ');
+      if (!data) throw new Error('Server returned an empty response');
 
       return data;
     } catch (error) {
-      console.error('Ошибка при логине:', error);
-      return { success: false, message: 'Ошибка соединения с сервером' };
+      console.error('Error during login:', error);
+      return { success: false, message: 'Error connecting to the server' };
     }
   };
 
@@ -51,7 +51,7 @@ function SignIn() {
 
     if (result.success) {
       document.cookie = `username=${encodeURIComponent(name)}; path=/; max-age=3600`;
-      alert('✅ ' + result.message);
+      alert(result.message);
       window.location.href = '/';
     } else {
       alert('⚠️ ' + result.message);
@@ -84,7 +84,7 @@ function SignIn() {
     </div>
       {errors.password && <span style={{ color: 'red' }}>{errors.password}</span>}
 
-      <button type="submit">Войти</button>
+      <button type="submit">Log In</button>
 
       <Link href="/signUp">You don't have an account? <strong>Sign Up!</strong></Link>
     </form>

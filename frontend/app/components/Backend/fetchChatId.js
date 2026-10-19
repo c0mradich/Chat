@@ -1,6 +1,5 @@
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
-
 async function fetchChatId(name, user1, currentChatInfo) {
   try {
     const response = await fetch(`${apiURL}/get_or_create_chat`, {

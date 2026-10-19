@@ -36,17 +36,19 @@ class Message(db.Model):
     __tablename__ = 'messages'
     _id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chats._id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users._id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users._id'), default=None, nullable=True)  # может быть None для системных сообщений
     text = db.Column(db.Text, nullable=False)  # Text вместо String
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    isCurrentTimeStamp = db.Column(db.Boolean, default=False)
 
     sender = db.relationship('User', back_populates='messages')
 
-    def __init__(self, chat_id, sender_id, text, timestamp=None):
+    def __init__(self, chat_id, sender_id, text, timestamp=None, isCurrentTimeStamp=False):
         self.chat_id = chat_id
         self.sender_id = sender_id
         self.text = text
         self.timestamp = timestamp or datetime.utcnow()
+        self.isCurrentTimeStamp = isCurrentTimeStamp
 
 
 class ChatParticipant(db.Model):

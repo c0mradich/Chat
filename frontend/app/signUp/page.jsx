@@ -14,13 +14,13 @@ export default function SignUp() {
   const validate = () => {
     const newErrors = {};
 
-    if (!name.trim()) newErrors.name = "Имя обязательно";
-    if (!password.trim()) newErrors.password = "Пароль обязателен";
+    if (!name.trim()) newErrors.name = "Name is required";
+    if (!password.trim()) newErrors.password = "Password is required";
 
     const repeat = rpassword.current?.value?.trim();
-    if (!repeat) newErrors.repeat = "Повторите пароль";
+    if (!repeat) newErrors.repeat = "Please repeat your password";
     if (password.trim() && repeat && password.trim() !== repeat) {
-      newErrors.repeat = "Пароли не совпадают";
+      newErrors.repeat = "Passwords do not match";
     }
     return newErrors;
   };
@@ -36,7 +36,7 @@ export default function SignUp() {
 
     setErrors({});
     try {
-      // Подготовка данных для отправки
+  
       const formData = {
         name,
         password
@@ -46,16 +46,16 @@ export default function SignUp() {
       const response = await fetch(`${apiURL}/addUser`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',  // Указываем, что отправляем JSON
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),  // Преобразуем данные в строку JSON
+        body: JSON.stringify(formData),
       });
   
       const data = await response.json();
   
       if (data.success) {
         document.cookie = `username=${encodeURIComponent(name)}; path=/; max-age=3600`;
-        alert('✅ ' + data.message);
+        alert(data.message);
         console.log(data)
         window.location.href = "/login";
       } else {
@@ -64,7 +64,7 @@ export default function SignUp() {
   
     } catch (error) {
       console.error('Ошибка при отправке запроса:', error);
-      alert('Произошла ошибка при соединении с сервером.');
+      alert('An error occurred while connecting to the server.');
     }
   };
 
@@ -103,7 +103,7 @@ export default function SignUp() {
       </div>
       {errors.repeat && <span style={{ color: 'red' }}>{errors.repeat}</span>}
 
-      <button type="submit">Войти</button>
+      <button type="submit">Sign Up</button>
       <Link href="/login">You have an account? <strong>Log In!</strong></Link>
     </form>
   );

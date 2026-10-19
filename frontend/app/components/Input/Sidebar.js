@@ -8,7 +8,7 @@ export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, 
           <input
             type="text"
             className="search-input"
-            placeholder="Поиск..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

@@ -102,43 +102,53 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-right: 10px;
+}
+
+/* Системные сообщения */
+.system-message {
+  width: 100%;                /* растягиваем на всю ширину */
+  display: flex;              /* делаем flex-контейнер */
+  justify-content: center;    /* центрируем текст */
+  align-items: center;
+
+  margin: 10px 0;
+  opacity: 0.8;
+  color: #ccc;
+  font-size: 0.85rem;
+}
+.system-message::before, .system-message::after {
+  content: " —————— "; /* Добавляем тире перед текстом */
 }
 
 .message {
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 12px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   word-wrap: break-word;
+  padding-bottom: 5px;
+}
+
+.message:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .message-sender {
-  font-weight: bold;
-  font-size: 0.75rem;
-  margin-bottom: 4px;
-  color: rgba(255, 255, 255, 0.6);
+  padding: 5px 0;
+}
+
+.message-sender>span {
+  font-size: 1rem;
+}
+
+.message-sender>span:hover{  
+  text-decoration: underline;
 }
 
 .message-text {
   font-size: 0.9rem;
   line-height: 1.4;
+    color: white;
 }
-
-.message.sent {
-  background-color: #0078d4;
-  color: white;
-  align-self: flex-end;
-}
-
-.message.received {
-  background-color: #3c3c3c;
-  color: white;
-  align-self: flex-start;
-}
-
 /* Ввод */
 .chat-input {
   display: flex;

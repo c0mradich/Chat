@@ -16,7 +16,6 @@ const data = await res.json();
 return data
 }
 
-
 export async function redirect(setName) {
   const data = await getId(); // ждем ответа с сервера
 
@@ -38,7 +37,6 @@ export function leave(name) {
     body: JSON.stringify({ name })
   })
 }
-
 
 export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen}){
     return(

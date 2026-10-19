@@ -16,11 +16,10 @@ export function InputField({
 }){  const onKeyDown = (e) => {
     if (e.key === 'Enter' && newMessage.trim()) {
       if (editingMsgId !== null) {
-        // редактирование
+
         handleSendMessage({ id: editingMsgId, text: newMessage }, 'edit_msg');
-        setEditingMsgId(null);  // сбрасываем режим редактирования
+        setEditingMsgId(null);
       } else {
-        // обычное сообщение
         handleSendMessage(newMessage, 'send_message');
       }
       setNewMessage('');
@@ -42,7 +41,7 @@ export function InputField({
           }
         }}
         onKeyDown={onKeyDown}
-        placeholder="Напишите сообщение..."
+        placeholder="Type a message..."
       />
       <InputButtons
         newMessage={newMessage}

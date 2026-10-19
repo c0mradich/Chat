@@ -1,4 +1,3 @@
-// ./components/fetchMessages.js
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
 export async function fetchMessages(chatId) {
@@ -10,5 +9,5 @@ export async function fetchMessages(chatId) {
     throw new Error(err.error || 'Failed to fetch messages');
   }
   const { messages } = await response.json();
-  return messages; // возвращаем массив сообщений
+  return messages;
 }
