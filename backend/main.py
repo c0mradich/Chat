@@ -1,6 +1,6 @@
-from stuff.db import db, User
-from stuff import app, socketio
 import os
+from stuff import app, socketio
+from stuff.db import db, User
 
 if __name__ == '__main__':
     with app.app_context():
@@ -8,10 +8,10 @@ if __name__ == '__main__':
         User.query.update({User.isActive: False})
         db.session.commit()
 
-        socketio.run(
-            app,
-            host='0.0.0.0',
-            port=int(os.environ.get('PORT', 5000)),
-            debug=False,
-            allow_unsafe_werkzeug=True
-        )
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 5000)),
+        debug=False,
+        allow_unsafe_werkzeug=True
+    )
