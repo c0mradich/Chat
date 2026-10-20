@@ -81,6 +81,8 @@ def register_routes(app, socketio):
             session['user_id'] = user_id
             session['username'] = user.name
 
+            print("USER_ID: ", session['user_id'], " USER NAME ", session['username'])
+
             if hasattr(user, 'isActive'):
                 user.isActive = True
 
