@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import "./Lightbox.css";
 
 export default function Lightbox({ src, alt = "Photo" }) {
   const [isOpen, setIsOpen] = useState(false);
