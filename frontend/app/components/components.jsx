@@ -18,7 +18,7 @@ return data
 
 export async function redirect(setName) {
   const data = await getId(); // ждем ответа с сервера
-  alert(data)
+  alert(JSON.stringify(data))
 
   if (!data.user_id) {
     // Пользователь не авторизован
