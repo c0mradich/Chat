@@ -8,8 +8,10 @@ from .WebSocket import register_socket_handlers
 from .routes import register_routes
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_PRIOR_URL = os.environ.get("FRONTEND_PRIOR_URL", "http://localhost:3000")
 SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "YOUR_SECRET_KEY")
 DATABASE_URL = os.environ.get("DATABASE_URL")
+FRONTEND_URLS = [FRONTEND_URL, FRONTEND_PRIOR_URL]
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -24,13 +26,13 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-CORS(app, resources={r"/*": {"origins": FRONTEND_URL}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": FRONTEND_URLS}}, supports_credentials=True)
 
 db.init_app(app)
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[FRONTEND_URL],
+    cors_allowed_origins=FRONTEND_URLS,
     async_mode='threading',
     max_http_buffer_size=50 * 1024 * 1024,
     logger=True,
