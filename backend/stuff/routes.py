@@ -63,15 +63,38 @@ def register_routes(app, socketio):
 
         user = User.query.filter_by(name=name).first()
         if user and check_password_hash(user.password, password):
+            user_id = getattr(user, 'id', None)
+
+            if user_id is None:
+                user_id = getattr(user, '_id', None)
+
+            if user_id is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Не удалось определить ID пользователя"
+                }), 500
+
+            # Удаляем данные предыдущей сессии
+            session.clear()
+
+            # Записываем данные нового пользователя
+            session['user_id'] = user_id
+            session['username'] = user.name
+
             if hasattr(user, 'isActive'):
                 user.isActive = True
-                db.session.commit()
 
-            session['user_id'] = getattr(user, 'id', getattr(user, '_id', None))
-            session['username'] = user.name
-            return jsonify({"success": True, "message": "Вход успешен!"}), 200
-        else:
-            return jsonify({"success": False, "message": "Неверное имя пользователя или пароль!"}), 401
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Вход успешен!"
+            }), 200
+
+        return jsonify({
+            "success": False,
+            "message": "Неверное имя пользователя или пароль!"
+        }), 401
 
 
     @app.route("/me")
