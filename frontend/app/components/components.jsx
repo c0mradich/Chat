@@ -29,13 +29,14 @@ export async function redirect(setName) {
 }
 
 export function leave(name) {
-  fetch(`${apiURL}/leave`, {
+  return fetch(`${apiURL}/leave`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ name })
-  })
+  });
 }
 
 export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
