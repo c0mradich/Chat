@@ -99,10 +99,8 @@ body {
 
   display: flex;
   flex-direction: column;
-  gap: 6px;
 
   margin-top: 2px;
-  padding: 2px 4px 2px 0;
 
   scrollbar-width: thin;
   scrollbar-color: #494b57 transparent;
@@ -149,7 +147,6 @@ body {
   transform: scale(0.985);
 }
 
-/* Добавь класс active выбранному пользователю */
 .user-item.active {
   color: #ffffff;
   background: linear-gradient(

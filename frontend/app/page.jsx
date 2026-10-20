@@ -97,7 +97,7 @@ function Home(){
         <Sidebar searchQuery={searchQuery}setSearchQuery={setSearchQuery}users={users}
           handleSendMessage={wsSendMessage}name={name}
           currentChatInfo={currentChatInfo}sideBarOpen={sideBarOpen}/>
-        <User_List FilteredUsers={FilteredUsers}setCurrentChat={setCurrentChat}
+        <User_List FilteredUsers={FilteredUsers}setCurrentChat={setCurrentChat}currentChat={currentChat}
           chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}name={name}Sidebar={sideBarOpen}/>
       </div>
 

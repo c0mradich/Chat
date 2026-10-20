@@ -53,7 +53,9 @@ function SignIn() {
       document.cookie = `username=${encodeURIComponent(name)}; path=/; max-age=3600`;
       window.location.href = '/';
     } else {
-      alert('⚠️ ' + result.message);
+      const newError = {}
+      newError.InvalidCredentials = "Your password is incorrect or this account doesn’t exist."
+      setErrors(newError)
     }
   };
 
@@ -72,14 +74,17 @@ function SignIn() {
 
       {errors.name && <span style={{ color: 'red' }}>{errors.name}</span>}
     <div className='inputContainer'>
-      <input
-        type="password"
-        placeholder=" "
-        name="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <div className='contentBlock'>
+        <input
+          type="password"
+          placeholder=" "
+          name="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       <label htmlFor="password"> Password </label>
+      {errors.InvalidCredentials && <span className='error' style={{color: 'red'}}>{errors.InvalidCredentials}</span>}
+      </div>
     </div>
       {errors.password && <span style={{ color: 'red' }}>{errors.password}</span>}
 

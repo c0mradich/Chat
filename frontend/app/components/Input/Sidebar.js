@@ -17,24 +17,33 @@ export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, 
     )
 }
 
-export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrentChatInfo, name, Sidebar }) {
+export function User_List({
+  FilteredUsers,
+  setCurrentChat,
+  currentChat,
+  chatsInfo,
+  setCurrentChatInfo,
+  name,
+  Sidebar
+}) {
   const handleClick = async (user) => {
     setCurrentChat(user.name);
+
     const chat = chatsInfo.find(chat => chat.name === user.name);
 
     if (user.id === null) {
       user.id = await fetchChatId(name, user.name, chat);
     }
 
-    chat && setCurrentChatInfo(chat);
+    if (chat) setCurrentChatInfo(chat);
   };
 
   return (
-    <div className={`user-list ${Sidebar?'':'close'}`}>
+    <div className={`user-list ${Sidebar ? '' : 'close'}`}>
       {FilteredUsers && FilteredUsers.map(user => (
         <div
           key={user.id || user.name}
-          className="user-item"
+          className={`user-item ${currentChat === user.name ? 'active' : ''}`}
           onClick={() => handleClick(user)}
         >
           {user.name}

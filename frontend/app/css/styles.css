@@ -1,158 +1,424 @@
-body{
-    background-color: #f4f6f9; /* светлый фон для формы */
+
+/* ================================
+   1. DESIGN SYSTEM
+================================ */
+
+:root {
+    color-scheme: dark;
+
+    --bg: #171b22;
+    --surface: #202630;
+    --surface-hover: #272f3b;
+    --input-bg: #191f28;
+
+    --text: #e5eaf0;
+    --text-muted: #8e9baa;
+
+    --accent: #65c9c0;
+    --accent-hover: #83ded4;
+    --accent-soft: rgba(101, 201, 192, 0.12);
+
+    --border: #353e4b;
+    --border-hover: #4b596a;
+
+    --error: #ff8b94;
+    --error-bg: rgba(255, 107, 120, 0.09);
+    --error-border: rgba(255, 107, 120, 0.3);
+
+    --radius: 12px;
+    --radius-sm: 8px;
+
+    --transition: 0.2s ease;
 }
+
+
+/* ================================
+   2. GLOBAL
+================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--bg);
+    color: var(--text);
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    -webkit-font-smoothing: antialiased;
+}
+
+input,
+button,
+textarea,
+select {
+    font: inherit;
+}
+
+input,
+a {
+    color: var(--text);
+}
+
+a {
+    text-decoration: none;
+    transition: color var(--transition);
+}
+
+a:hover {
+    color: var(--accent);
+}
+
+strong {
+    color: var(--accent);
+}
+
+
+/* ================================
+   3. FORM
+================================ */
+
 form {
     display: flex;
-    flex: 1;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 90vh;
-    gap: 20px;
+
+    margin: 50px;
+
+    width: min(100% - 32px, 440px);
+    min-height: 90vh;
+    margin-inline: auto;
+    padding: 32px 28px;
+
+    gap: 22px;
+
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+
     text-align: center;
-    padding: 20px;
-    border-radius: 10px;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18),
+        0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Chrome, Edge, Safari — автозаполнение */
+
+/* ================================
+   4. INPUT CONTAINER
+================================ */
+
+form .inputContainer {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+form .inputContainer input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+
+    padding: 15px 14px 12px;
+
+    color: var(--text);
+    background-color: var(--input-bg);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    font-size: 15px;
+
+    transition:
+        border-color var(--transition),
+        background-color var(--transition),
+        box-shadow var(--transition);
+}
+
+/* Hover */
+
+form .inputContainer input:hover {
+    border-color: var(--border-hover);
+}
+
+/* Focus */
+
+form .inputContainer input:focus {
+    border-color: var(--accent);
+    outline: none;
+
+    box-shadow:
+        0 0 0 3px var(--accent-soft);
+}
+
+/* Placeholder нужен для работы плавающего label */
+
+form .inputContainer input::placeholder {
+    color: transparent;
+}
+
+
+/* ================================
+   5. FLOATING LABELS
+================================ */
+
+form .inputContainer label {
+    position: absolute;
+
+    top: 50%;
+    left: 14px;
+
+    transform: translateY(-50%);
+
+    padding: 0 5px;
+
+    color: var(--text-muted);
+    background: var(--input-bg);
+
+    font-size: 14px;
+    line-height: 1.2;
+
+    pointer-events: none;
+
+    transition:
+        top var(--transition),
+        left var(--transition),
+        font-size var(--transition),
+        color var(--transition);
+}
+
+/* Label moves up on focus or when the field contains text */
+
+form .inputContainer input:focus + label,
+form .inputContainer input:not(:placeholder-shown) + label {
+    top: 0;
+    left: 10px;
+
+    transform: translateY(-50%);
+
+    color: var(--accent);
+    font-size: 12px;
+}
+
+/* If input has an icon or custom padding, adjust label separately */
+
+
+/* ================================
+   6. AUTOFILL
+================================ */
+
 form .inputContainer input:-webkit-autofill,
 form .inputContainer input:-webkit-autofill:hover,
 form .inputContainer input:-webkit-autofill:focus,
 form .inputContainer input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #f4f6f9 inset !important;
-    -webkit-text-fill-color: rgb(39, 36, 36) !important;
-    caret-color: rgb(39, 36, 36);
+    -webkit-box-shadow:
+        0 0 0 1000px var(--input-bg) inset !important;
+
+    -webkit-text-fill-color: var(--text) !important;
+    caret-color: var(--accent);
+
     transition: background-color 9999s ease-out 0s;
 }
 
-input, a{
-    color: rgb(39, 36, 36);
-}
-strong{
-    color: rgb(81, 157, 180);
-}
 
-form button {
-    width: 40%;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc; /* граница для инпутов */
-    transition: all 0.3s ease-in-out; /* плавный переход при фокусе */
-}
-form .inputContainer{
-    width: 40%;
-    position: relative;
-}
-form .inputContainer input{
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc; /* граница для инпутов */
-    transition: all 0.3s ease-in-out; /* плавный переход при фокусе */
-}
-form .inputContainer label{
-    position: absolute;
-    top: 0.7rem;    /* примерно по центру инпута */
-    left: 0.7rem;
-    color: #bbb;    /* сероватый цвет для лейбла */
-    font-size: 1rem;
-    pointer-events: none; /* чтобы клик проходил на input */
-    transition: 0.2s ease all;
-    background: #f4f6f9;  /* фон совпадает с input */
-    padding: 0 0.3rem;    /* чтобы «разрывал» рамку */
-    border-radius: 3px;
-}
-
-form .inputContainer input:focus+label, form .inputContainer input:not(:placeholder-shown)+label{
-    font-size: 0.8em;
-    color: rgb(39, 97, 114);
-    top: -0.6rem;      /* поднять наверх */
-    left: 0.8rem;
-}
-
-form *:focus {
-    border-color: #f4f6f9;
-    outline: none; /* убираем стандартную обводку */
-}
-
-label {
-    font-size: x-large;
-    color: #333; /* тёмный цвет для текста меток */
-}
+/* ================================
+   7. BUTTON
+================================ */
 
 form > button {
-    background-color: rgb(39, 97, 114);
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 50px;
     position: relative;
-    font-size: 18px;
+
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 20px;
+
+    color: #102522;
+    background: var(--accent);
+
+    border: 1px solid transparent;
+    border-radius: 999px;
+
+    font-size: 15px;
+    font-weight: 650;
+
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease; /* плавные переходы */
+
+    transition:
+        background-color var(--transition),
+        transform var(--transition),
+        box-shadow var(--transition);
 }
 
 form > button:hover {
-    background-color: rgb(50, 120, 140); /* светлее при наведении */
+    background: var(--accent-hover);
+
+    box-shadow:
+        0 5px 20px rgba(101, 201, 192, 0.12);
 }
 
 form > button:active {
-    animation: button 0.2s ease; /* добавлена быстрая анимация при нажатии */
-    transform: translateY(2px); /* слегка опускаем кнопку при нажатии */
+    transform: translateY(1px) scale(0.99);
 }
 
-@keyframes button {
+form > button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+form > button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+
+/* ================================
+   8. ERROR MESSAGES
+================================ */
+
+/* Works with <div class="error">...</div> */
+
+.error:not(:empty) {
+    width: 100%;
+    padding: 12px 14px;
+
+    color: var(--error);
+    background: var(--error-bg);
+
+    border: 1px solid var(--error-border);
+    border-radius: var(--radius-sm);
+
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: left;
+
+    overflow-wrap: anywhere;
+
+    animation: error-appear 0.22s ease-out;
+}
+
+/* Optional icon if the markup contains one */
+
+.error .errorIcon {
+    flex-shrink: 0;
+    color: var(--error);
+}
+
+
+/* ================================
+   9. LABELS AND CONTENT
+================================ */
+
+label {
+    color: var(--text);
+}
+
+.loginLabel {
+    color: var(--text);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.contentBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    width: 100%;
+    gap: 6px;
+
+    text-align: left;
+}
+
+.contentBlock > * {
+    max-width: 100%;
+}
+
+
+/* ================================
+   10. ANIMATIONS
+================================ */
+
+@keyframes error-appear {
     from {
-        top: 0;
-        left: 0;
+        opacity: 0;
+        transform: translateY(-4px);
     }
+
     to {
-        top: 2px;
-        left: 1px;
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
-/* Медиа-запросы для мобильных устройств */
+
+/* ================================
+   11. MOBILE
+================================ */
+
 @media (max-width: 768px) {
-    form > * {
-        width: 80%;
-    }
-
     form {
-        gap: 15px;
-        padding: 20px;
-        box-sizing: border-box;
-    }
+        width: calc(100% - 24px);
+        min-height: 90vh;
 
-    label {
-        font-size: large;
+        padding: 26px 20px;
+        gap: 18px;
+
+        border-radius: 16px;
     }
 
     form .inputContainer {
-        width: 90%;
-        margin: 0 auto;
-        box-sizing: border-box;
+        width: 100%;
     }
 
     form .inputContainer input {
         width: 100%;
         min-width: 0;
-        box-sizing: border-box;
+        font-size: 16px;
     }
-    form>button{
-        width: 90%;
+
+    form > button {
+        width: 100%;
         min-width: 0;
-        box-sizing: border-box;
+    }
+
+    .loginLabel {
+        font-size: 23px;
     }
 }
 
-*.black-theme {
-    background-color: #121212; /* тёмный фон для чёрной темы */
-    color: #e0e0e0; /* светлый текст для контраста */
+@media (max-width: 380px) {
+    form {
+        width: calc(100% - 16px);
+        padding: 22px 16px;
+        gap: 16px;
+    }
 }
 
-.loginLabel{
-    font-weight: bold;
+
+/* ================================
+   12. REDUCED MOTION
+================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
