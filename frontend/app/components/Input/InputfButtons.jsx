@@ -59,14 +59,6 @@ return (
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
-
-        <button
-          className="call-btn"
-          onClick={inCall ? endCall : startCall}
-        >
-          {inCall ? '🔴' : '📞'}
-        </button>
-
           <button className="video-call-btn">📹</button>
           {micStream ? (
             <button

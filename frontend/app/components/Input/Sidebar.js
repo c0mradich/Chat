@@ -2,7 +2,7 @@ import OptionsMenu from "../Backend/group_chat"
 import  fetchChatId  from "../Backend/fetchChatId";
 import { useCallback } from "react";
 
-export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, chatId, currentChatInfo, sideBarOpen}){
+export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, currentChatInfo, sideBarOpen}){
     return (
         <div className={`search-container ${sideBarOpen?'':'close'}`}>
           <input
@@ -17,7 +17,7 @@ export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, 
     )
 }
 
-export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrentChatInfo, chatId, name, Sidebar }) {
+export function User_List({ FilteredUsers, setCurrentChat, chatsInfo, setCurrentChatInfo, name, Sidebar }) {
   const handleClick = async (user) => {
     setCurrentChat(user.name);
     const chat = chatsInfo.find(chat => chat.name === user.name);

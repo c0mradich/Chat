@@ -2,11 +2,11 @@ import React from "react";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
-export function Progress({ loading, error }) {
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  return null;
+
+export function Progress({ loading, error, statusOverlay: StatusOverlay }) {
+  return <StatusOverlay loading={loading} error={error} />;
 }
+
 
 export async function getId() {
 const res = await fetch(`${apiURL}/me`, {
@@ -38,10 +38,11 @@ export function leave(name) {
   })
 }
 
-export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen}){
+export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
     return(
         <div className="chat-header">
-            <span>Chat with {currentChat || "Select a user"}</span> <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
+            <span>{currentChat || "Select a user"}</span> <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
+            <button className="call-btn" onClick={inCall ? endCall : startCall}>{inCall ? '🔴' : '📞'}</button>
         </div>
     )
 }

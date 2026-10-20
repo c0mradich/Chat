@@ -9,6 +9,7 @@ import {fetchMessages}from './components/Backend/fetchMessages';
 import fetchChatId from './components/Backend/fetchChatId';
 import {useChat}from './components/Backend/useChat';
 import {useCall}from './components/Backend/useCall';
+import statusOverlay from './components/statusOverlay';
 
 const apiURL=process.env.NEXT_PUBLIC_API_URL;
 
@@ -53,18 +54,6 @@ function Home(){
   },[users,searchQuery,name]);
 
   useEffect(()=>{
-    if(FilteredUsers.length){
-      const selected=FilteredUsers[0].name;
-      setCurrentChat(selected);
-      const info=users.find(u=>u.name===selected);
-      setCurrentChatInfo(info||null);
-    }else{
-      setCurrentChat(null);
-      setCurrentChatInfo(null);
-    }
-  },[FilteredUsers]);
-
-  useEffect(()=>{
     async function loadChat(){
       if(!name||!currentChat)return;
       setChatId(null);
@@ -103,19 +92,18 @@ function Home(){
 
   return(
     <div className="chat-container">
-      <Progress loading={loading}error={error}/>
+      <Progress loading={loading}error={error} statusOverlay={statusOverlay}/>
       <div className="sidebar">
         <Sidebar searchQuery={searchQuery}setSearchQuery={setSearchQuery}users={users}
-          handleSendMessage={wsSendMessage}name={name}chatId={chatId}
+          handleSendMessage={wsSendMessage}name={name}
           currentChatInfo={currentChatInfo}sideBarOpen={sideBarOpen}/>
         <User_List FilteredUsers={FilteredUsers}setCurrentChat={setCurrentChat}
-          chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}
-          chatId={chatId}name={name}Sidebar={sideBarOpen}/>
+          chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}name={name}Sidebar={sideBarOpen}/>
       </div>
 
       {currentChat&&(
         <div className="chat-area">
-          <ChatHeader currentChat={currentChat}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}/>
+          <ChatHeader currentChat={currentChat}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}/>
           <Messages ref={messagesWindow}messages={messages}name={name}
             handleSendMessage={wsSendMessage}setNewMessage={setNewMessage}
             setEditingMsgId={setEditingMsgId}/>
@@ -124,8 +112,7 @@ function Home(){
               displayButtons={setDialogButtons}handleSendMessage={wsSendMessage}
               editingMsgId={editingMsgId}setEditingMsgId={setEditingMsgId}
               wsSendMessage={wsSendMessage}name={name}chatId={chatId}
-              displayButtonsIndex={dialogButtons}startCall={startCall}
-              endCall={endCall}inCall={inCall}/>
+              displayButtonsIndex={dialogButtons}/>
           </div>
           <audio ref={audioRef}autoPlay/>
         </div>
