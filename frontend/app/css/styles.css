@@ -12,7 +12,17 @@ form {
     text-align: center;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* мягкая тень для формы */
+}
+
+/* Chrome, Edge, Safari — автозаполнение */
+form .inputContainer input:-webkit-autofill,
+form .inputContainer input:-webkit-autofill:hover,
+form .inputContainer input:-webkit-autofill:focus,
+form .inputContainer input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #f4f6f9 inset !important;
+    -webkit-text-fill-color: rgb(39, 36, 36) !important;
+    caret-color: rgb(39, 36, 36);
+    transition: background-color 9999s ease-out 0s;
 }
 
 input, a{
@@ -54,6 +64,7 @@ form .inputContainer label{
     padding: 0 0.3rem;    /* чтобы «разрывал» рамку */
     border-radius: 3px;
 }
+
 form .inputContainer input:focus+label, form .inputContainer input:not(:placeholder-shown)+label{
     font-size: 0.8em;
     color: rgb(39, 97, 114);
@@ -62,13 +73,11 @@ form .inputContainer input:focus+label, form .inputContainer input:not(:placehol
 }
 
 form *:focus {
-    border-color: rgb(39, 97, 114); /* изменение цвета границы при фокусе */
-    box-shadow: 0 0 5px rgb(39, 97, 114); /* лёгкая тень при фокусе */
+    border-color: #f4f6f9;
     outline: none; /* убираем стандартную обводку */
 }
 
 label {
-    font-weight: bolder;
     font-size: x-large;
     color: #333; /* тёмный цвет для текста меток */
 }
@@ -108,20 +117,42 @@ form > button:active {
 /* Медиа-запросы для мобильных устройств */
 @media (max-width: 768px) {
     form > * {
-        width: 80%; /* увеличиваем ширину на мобильных устройствах */
+        width: 80%;
     }
-    
+
     form {
-        padding: 15px;
         gap: 15px;
+        padding: 20px;
+        box-sizing: border-box;
     }
 
     label {
         font-size: large;
+    }
+
+    form .inputContainer {
+        width: 90%;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+
+    form .inputContainer input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+    form>button{
+        width: 90%;
+        min-width: 0;
+        box-sizing: border-box;
     }
 }
 
 *.black-theme {
     background-color: #121212; /* тёмный фон для чёрной темы */
     color: #e0e0e0; /* светлый текст для контраста */
+}
+
+.loginLabel{
+    font-weight: bold;
 }

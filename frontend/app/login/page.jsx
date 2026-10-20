@@ -60,7 +60,7 @@ function SignIn() {
 
   return (
     <form onSubmit={handleSubmit} method='POST'>
-      <label>Login</label>
+      <label className='loginLabel'>Login</label>
       <div className='inputContainer'>
         <input
           placeholder=" "

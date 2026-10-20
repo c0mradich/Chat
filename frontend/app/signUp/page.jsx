@@ -70,7 +70,7 @@ export default function SignUp() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>Sign-Up</label>
+      <label className='loginLabel'>Sign-Up</label>
       <div className='inputContainer'>
         <input
           placeholder=" "
