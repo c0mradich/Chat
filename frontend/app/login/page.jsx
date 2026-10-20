@@ -51,7 +51,6 @@ function SignIn() {
 
     if (result.success) {
       document.cookie = `username=${encodeURIComponent(name)}; path=/; max-age=3600`;
-      alert(result.message);
       window.location.href = '/';
     } else {
       alert('⚠️ ' + result.message);

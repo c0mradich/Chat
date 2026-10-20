@@ -55,7 +55,6 @@ export default function SignUp() {
   
       if (data.success) {
         document.cookie = `username=${encodeURIComponent(name)}; path=/; max-age=3600`;
-        alert(data.message);
         console.log(data)
         window.location.href = "/login";
       } else {

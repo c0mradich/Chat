@@ -81,8 +81,6 @@ def register_routes(app, socketio):
             session['user_id'] = user_id
             session['username'] = user.name
 
-            print("USER_ID: ", session['user_id'], " USER NAME ", session['username'])
-
             if hasattr(user, 'isActive'):
                 user.isActive = True
 
@@ -177,8 +175,6 @@ def register_routes(app, socketio):
                             msg_dict['content'] = data_url
 
                 messages_data.append(msg_dict)
-
-            print(f"Fetched {len(messages_data)} messages for chat_id {chat_id}")
             return jsonify({"messages": messages_data}), 200
 
         except Exception as e:
