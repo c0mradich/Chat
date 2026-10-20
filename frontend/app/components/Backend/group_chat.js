@@ -93,10 +93,10 @@ export default function OptionsMenu({ users, handleSendMessage, name, currentCha
         className="p-2 rounded-full hover:bg-gray-200 transition"
         aria-label="More options"
       >
-        <MoreVertical className="h-5 w-5" />
+        <MoreVertical className="h-10 w-10" />
       </button>
 
-      {/* Меню с двумя кнопками */}
+      {/* Меню с тремя кнопками */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
