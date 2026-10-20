@@ -87,6 +87,13 @@ export default function PersonalSettings() {
       >
         {saving ? "Сохраняю..." : "Сохранить изменения"}
       </button>
+
+      <div>
+        <a href="/" className={styles.link}>
+          Return to chat
+        </a>
+      </div>
+
       {error && <p className={styles.error}>{error}</p>}
     </div>
   );

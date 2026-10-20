@@ -1,5 +1,7 @@
 import {useRef, useState} from "react"
 import { Dialog, DialogTitle, DialogActions, Button } from '@mui/material';
+import { formatChatDate } from "../timeFunctions.js";
+import Lightbox from "./LightBox/photoPreview.jsx"
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
@@ -40,7 +42,10 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
     try {
       const [metadata, base64Data] = content.split(',');
       const mime = metadata.split(':')[1]?.split(';')[0] || '';
-      if (mime.startsWith('image/')) return <img src={content} alt="file" className="message-image" />;
+      if (mime.startsWith('image/')) {
+        return (
+          <Lightbox src={content} alt={text} />
+        ); }
       if (mime.startsWith('audio/')) return <audio controls src={content} />;
       if (mime.startsWith('video/')) return <video controls src={content} />;
       return <a href={content} download>Download file</a>;
@@ -72,9 +77,17 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
     <div className="messages">
 {messages.map((msg, index) => {
     const isMe = msg.sender === name;
-    const displayName = isMe ? 'You' : msg.sender;
+    const displayName = msg.sender;
     const prevMsg = messages[index - 1];
     const sameSenderAsPrev = prevMsg && prevMsg.sender === msg.sender;
+
+    const currDate = new Date(msg.timestamp);
+    const prevDate = prevMsg ? new Date(prevMsg.timestamp) : null;
+
+    const isNewDay =
+    prevDate?.getFullYear() !== currDate.getFullYear() ||
+    prevDate?.getMonth() !== currDate.getMonth() ||
+    prevDate?.getDate() !== currDate.getDate();
 
     // Проверяем разницу во времени
     let timeGap = true;
@@ -91,9 +104,14 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
     const shouldShowSender = !sameSenderAsPrev || timeGap;
 
     return (
-        <div
-            key={index}
-            className={`message ${isMe ? 'sent' : 'received'}`}
+      <div key={index}>
+        {isNewDay && (
+            <div key={`date-${index}`} className="date-separator">
+                {formatChatDate(currDate)}
+            </div>
+        )}
+      <div
+            className={`message`}
             onContextMenu={(e) => {
                 e.preventDefault();
                 handleOpenPopup(msg);
@@ -106,10 +124,10 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
                 <>
                     {shouldShowSender && (
                         <div className="message-sender">
-                            <span>{displayName}</span>  {' ' + new Date(msg.timestamp).toLocaleTimeString([], {
+                            <span className="senderName">{displayName}</span>  <span className="message-time">{' ' + new Date(msg.timestamp).toLocaleTimeString([], {
                                 hour: '2-digit',
                                 minute: '2-digit'
-                            })}
+                            })}</span>
                         </div>
                     )}
 
@@ -121,6 +139,7 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
                 </>
             )}
         </div>
+      </div>
     );
 })}
 

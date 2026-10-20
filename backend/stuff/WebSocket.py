@@ -78,27 +78,6 @@ def register_socket_handlers(socketio):
             return
 
         # Сохраняем сообщение с sender_id
-        last_msg_timestamp = Message.query.filter_by(chat_id=chat_id).order_by(Message.timestamp.desc()).first()
-        lastRecordedTimestamp = last_msg_timestamp.timestamp if last_msg_timestamp else None
-        currentTimestamp = datetime.utcnow()
-        if not lastRecordedTimestamp or lastRecordedTimestamp.date() != currentTimestamp.date():
-        # Новый день → создаём индикатор
-            indicator_msg = Message(
-                chat_id=chat_id,
-                sender_id=None,  # системное сообщение
-                text=f"{currentTimestamp.strftime('%Y-%m-%d')}",
-                isCurrentTimeStamp=True,
-            )
-            db.session.add(indicator_msg)
-
-            msg = Message(chat_id=chat_id, sender_id=None, text=text)
-            emit('receive_message', {
-                'id': indicator_msg._id,
-                'sender': None,
-                'text': indicator_msg.text,
-                'timestamp': indicator_msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            }, room=chat_id)
-
         msg = Message(chat_id=chat_id, sender_id=user._id, text=text)
         db.session.add(msg)
         db.session.commit()

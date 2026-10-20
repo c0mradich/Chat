@@ -120,3 +120,8 @@ form > button:active {
         font-size: large;
     }
 }
+
+*.black-theme {
+    background-color: #121212; /* тёмный фон для чёрной темы */
+    color: #e0e0e0; /* светлый текст для контраста */
+}

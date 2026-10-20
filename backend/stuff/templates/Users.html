@@ -57,18 +57,16 @@
         <table>
             <thead>
                 <tr>
-                    <th>Имя</th>
-                    <th>Пароль</th>
                     <th>ID</th>
+                    <th>Имя</th>
                     <th>Online</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.name }}</td>
-                    <td>{{ user.password }}</td>
                     <td>{{ user._id }}</td>
+                    <td>{{ user.name }}</td>
                     <td>{{ user.isActive }}</td>
                 </tr>
                 {% else %}
