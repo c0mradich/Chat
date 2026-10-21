@@ -10,9 +10,6 @@ export function InputField({
   chatId,
   displayButtons,
   displayButtonsIndex,
-  startCall,
-  endCall,
-  inCall
 }){  const onKeyDown = (e) => {
     if (e.key === 'Enter' && newMessage.trim()) {
       if (editingMsgId !== null) {
@@ -50,9 +47,6 @@ export function InputField({
         sender={name}
         chatId={chatId}
         displayButtonsIndex={displayButtonsIndex}
-        startCall={startCall}
-        endCall={endCall}
-        inCall={inCall}
       />
     </div>
   );

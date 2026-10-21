@@ -2,7 +2,7 @@ import OptionsMenu from "../Backend/group_chat"
 import  fetchChatId  from "../Backend/fetchChatId";
 import { useCallback } from "react";
 
-export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, currentChatInfo, sideBarOpen}){
+export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, currentChatInfo, sideBarOpen, requestUserList}){
     return (
         <div className={`search-container ${sideBarOpen?'':'close'}`}>
           <input
@@ -26,17 +26,46 @@ export function User_List({
   name,
   Sidebar
 }) {
-  const handleClick = async (user) => {
-    setCurrentChat(user.name);
 
-    const chat = chatsInfo.find(chat => chat.name === user.name);
+const handleClick = async (user) => {
+  setCurrentChat(user.name);
 
-    // if (user.id === null) {
-    //   user.id = await fetchChatId(name, user.name, chat);
-    // }
+  // Для существующей группы поиск личного чата не нужен
+  if (user.isGroup) {
+    setCurrentChatInfo({
+      id: user.id,
+      userId: null,
+      name: user.name,
+      isGroup: true,
+      chatParticipants: user.chatParticipants
+    });
+    return;
+  }
 
-    setCurrentChatInfo(chat ?? user);
-  };
+  // Сначала сохраняем выбранного собеседника
+  setCurrentChatInfo({
+    id: null,
+    userId: user.userId,
+    name: user.name,
+    isGroup: false,
+    chatParticipants: user.chatParticipants
+  });
+
+  try {
+    const chatId = await fetchChatId(user.userId);
+
+    setCurrentChatInfo({
+      id: chatId,
+      userId: user.userId,
+      name: user.name,
+      isGroup: false,
+      chatParticipants: user.chatParticipants
+    });
+  } catch (error) {
+    console.error('Не удалось найти чат:', error);
+  }
+};
+
 
   return (
     <div className={`user-list ${Sidebar ? '' : 'close'}`}>
@@ -71,6 +100,6 @@ export function useHandleUserClick(setCurrentUser) {
   }, [setCurrentUser]);
 }
 
-  export async function fetchUsers (name, handleSendMessage) {
-          handleSendMessage({"name":name}, 'get_userlist')
+  export async function fetchUsers (name, requestUserList) {
+    requestUserList(name);
   };

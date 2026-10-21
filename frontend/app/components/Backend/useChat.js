@@ -13,12 +13,24 @@ export function useChat(
   setLoading,
   setChatsInfo,
   users,
-  dialogButtons
+  dialogButtons,
+  currentChatInfo,
+  setChatId
 ) {
   const socketRef = useRef(null);
   const [socket, setSocket] = useState(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const previousChatIdRef = useRef(null);
+
+  const fetchUsers = (userName) => {
+  const currentSocket = socketRef.current;
+
+  if (!currentSocket || !currentSocket.connected) return;
+
+  currentSocket.emit('get_userlist', {
+    text: { name: userName },
+  });
+};
 
   useEffect(() => {
     if (!name) return;
@@ -63,6 +75,7 @@ export function useChat(
         }
         arr.push({
           id: chat.id,
+          userId: chat.user_id,
           name: chatName,
           isGroup: chat.is_group,
           chatParticipants: chat.participants
@@ -101,18 +114,57 @@ export function useChat(
     }
   }, [chatId, name, socketConnected]);
 
-  const sendMessage = (text, path) => {
-    const currentSocket = socketRef.current;
-    if (!currentSocket || !currentSocket.connected) return;
 
-    currentSocket.emit(path, {
-      chat_id: chatId,
-      sender: name,
-      text
+const sendMessage = async (text, path) => {
+  const currentSocket = socketRef.current;
+
+  if (!currentSocket || !currentSocket.connected) return;
+
+  let actualChatId = chatId;
+
+  // Если личного чата ещё нет — создаём его.
+  if (actualChatId == null && currentChatInfo && !currentChatInfo.isGroup) {
+    const response = await fetch(`${apiURL}/create_chat`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        other_user_id: currentChatInfo.userId,
+      }),
     });
 
-    dialogButtons(0);
-  };
+    const data = await response.json();
 
-  return { sendMessage, socket, socketConnected };
+    if (!response.ok) {
+      throw new Error(data.error || 'Не удалось создать чат');
+    }
+
+    actualChatId = data.chat_id;
+    setChatId(actualChatId);
+  }
+
+  // Не отправляем сообщение без ID чата.
+  if (actualChatId == null) {
+    console.error('Невозможно отправить сообщение: chat_id отсутствует');
+    return;
+  }
+
+  currentSocket.emit(path, {
+    chat_id: actualChatId,
+    sender: name,
+    text,
+  });
+
+  dialogButtons(0);
+};
+
+
+  return {
+  sendMessage,
+  fetchUsers,
+  socket,
+  socketConnected,
+};
 }

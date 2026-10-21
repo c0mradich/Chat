@@ -35,15 +35,33 @@ function Home(){
 
   const handleUserClick=useHandleUserClick(setCurrentChat);
 
-  const{sendMessage:wsSendMessage,socket:wsSocket,socketConnected}=useChat(
-    chatId,name,
-    msg=>setMessages(prev=>[...prev,msg]),
-    id=>setMessages(prev=>prev.filter(m=>m.id!==id)),
-    msg=>setMessages(prev=>prev.map(m=>m.id===msg.id?{...m,text:msg.text}:m)),
-    setUsers,setLoading,setChatsInfo,users, setDialogButtons
-  );
 
-  useEffect(()=>{if(name&&socketConnected)fetchUsers(name,wsSendMessage);},[name,socketConnected]);
+
+const {
+  sendMessage: wsSendMessage,
+  fetchUsers: requestUserList,
+  socket: wsSocket,
+  socketConnected
+} = useChat(
+  chatId,
+  name,
+  msg => setMessages(prev => [...prev, msg]),
+  id => setMessages(prev => prev.filter(m => m.id !== id)),
+  msg => setMessages(prev =>
+    prev.map(m => m.id === msg.id ? { ...m, text: msg.text } : m)
+  ),
+  setUsers,
+  setLoading,
+  setChatsInfo,
+  users,
+  setDialogButtons,
+  currentChatInfo,
+  setChatId
+);
+
+
+
+  useEffect(()=>{if(name&&socketConnected)fetchUsers(name,requestUserList);},[name,socketConnected]);
 
   const{startCall,endCall,callStream,inCall}=useCall(wsSocket,chatId,name);
 
@@ -53,15 +71,9 @@ function Home(){
     setFilteredUsers(filteredUsers(users,searchQuery,name));
   },[users,searchQuery,name]);
 
-  useEffect(()=>{
-    async function loadChat(){
-      if(!name||!currentChat)return;
-      setChatId(null);
-      const id=await fetchChatId(name,currentChat,currentChatInfo);
-      if(id)setChatId(id);
-    }
-    loadChat();
-  },[currentChat,name,currentChatInfo]);
+  useEffect(() => {
+    setChatId(currentChatInfo?.id ?? null);
+  }, [currentChatInfo]);
 
   useEffect(()=>{
     async function loadMessages(){
@@ -96,7 +108,7 @@ function Home(){
       <div className="sidebar">
         <Sidebar searchQuery={searchQuery}setSearchQuery={setSearchQuery}users={users}
           handleSendMessage={wsSendMessage}name={name}
-          currentChatInfo={currentChatInfo}sideBarOpen={sideBarOpen}/>
+          currentChatInfo={currentChatInfo}sideBarOpen={sideBarOpen}requestUserList={requestUserList}/>
         <User_List FilteredUsers={FilteredUsers}setCurrentChat={setCurrentChat}currentChat={currentChat}
           chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}name={name}Sidebar={sideBarOpen}/>
       </div>

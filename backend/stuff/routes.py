@@ -1,7 +1,7 @@
 from flask import request, jsonify, session, render_template
 from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
-from Python_Utils.utils import get_or_create_chat
+from Python_Utils.utils import find_chat, create_chat
 from Python_Utils.mime import get_mime_type_from_extension
 from Python_Utils.func import generate_file_hash
 import base64, os
@@ -119,30 +119,20 @@ def register_routes(app, socketio):
             print(f"Ошибка в /me: {e}")
             return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
-
-    @app.route('/get_or_create_chat', methods=['POST'])
-    def get_chat():
-        data = request.get_json()
-        sender = data.get('sender')
-        chat_name = data.get('name')
-        chat_info = data.get('chatInfo')
-
-        if not sender or not chat_name or not chat_info:
-            return jsonify({'error': 'Missing sender, name, or chatInfo'}), 400
-
-        chat_id = chat_info.get('id')
-
-        if chat_id is None:
-            # Создаем новый чат, если id не передан
-            chat_id = get_or_create_chat(chat_info['chatParticipants'][0], chat_info['chatParticipants'][1], db, Chat, ChatParticipant, User, chat_info)
-
-            if chat_id is None:
-                return jsonify({'error': 'Failed to create chat'}), 500
-
-        return jsonify({'chat_id': chat_id})
-
     @app.route('/get_messages/<int:chat_id>', methods=['GET'])
     def get_messages(chat_id):
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Не авторизован'}), 401
+
+        is_participant = ChatParticipant.query.filter_by(
+            chat_id=chat_id,
+            user_id=user_id
+        ).first()
+
+        if not is_participant:
+            return jsonify({'error': 'Нет доступа к этому чату'}), 403
+        
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
         try:
@@ -289,3 +279,101 @@ def register_routes(app, socketio):
 
         else:
             return jsonify({"name": username})
+
+
+    @app.route('/find_chat/<int:other_user_id>', methods=['GET'])
+    def find_personal_chat(other_user_id):
+        user_id = session.get('user_id')
+
+        if not user_id:
+            return jsonify({'error': 'Не авторизован'}), 401
+
+        if user_id == other_user_id:
+            return jsonify({'error': 'Нельзя открыть чат с самим собой'}), 400
+
+        other_user = db.session.get(User, other_user_id)
+        if not other_user:
+            return jsonify({'error': 'Пользователь не найден'}), 404
+
+        user_chats = (
+            db.session.query(ChatParticipant.chat_id)
+            .filter(ChatParticipant.user_id == user_id)
+            .subquery()
+        )
+
+        chat = (
+            db.session.query(Chat)
+            .join(ChatParticipant, ChatParticipant.chat_id == Chat._id)
+            .filter(
+                Chat._id.in_(user_chats),
+                ChatParticipant.user_id == other_user_id,
+                Chat.is_group.is_(False)
+            )
+            .first()
+        )
+
+        # Чат ещё не создан — это нормальная ситуация
+        return jsonify({
+            'chat_id': chat._id if chat else None,
+            'messages': []
+        }), 200
+
+    @app.route('/create_chat', methods=['POST'])
+    def create_personal_chat():
+        user_id = session.get('user_id')
+
+        if not user_id:
+            return jsonify({'error': 'Не авторизован'}), 401
+
+        data = request.get_json() or {}
+        other_user_id = data.get('other_user_id')
+
+        if not isinstance(other_user_id, int) or isinstance(other_user_id, bool):
+            return jsonify({'error': 'Некорректный ID собеседника'}), 400
+
+        if user_id == other_user_id:
+            return jsonify({'error': 'Нельзя создать чат с самим собой'}), 400
+
+        other_user = db.session.get(User, other_user_id)
+        if not other_user:
+            return jsonify({'error': 'Пользователь не найден'}), 404
+
+        try:
+            user_chats = (
+                db.session.query(ChatParticipant.chat_id)
+                .filter(ChatParticipant.user_id == user_id)
+                .subquery()
+            )
+
+            existing_chat = (
+                db.session.query(Chat)
+                .join(ChatParticipant, ChatParticipant.chat_id == Chat._id)
+                .filter(
+                    Chat._id.in_(user_chats),
+                    ChatParticipant.user_id == other_user_id,
+                    Chat.is_group.is_(False)
+                )
+                .first()
+            )
+
+            # Повторная проверка: чат мог появиться после первого поиска
+            if existing_chat:
+                return jsonify({'chat_id': existing_chat._id}), 200
+
+            new_chat = Chat(is_group=False)
+            db.session.add(new_chat)
+            db.session.flush()  # Получаем new_chat._id до создания участников
+
+            db.session.add_all([
+                ChatParticipant(chat_id=new_chat._id, user_id=user_id),
+                ChatParticipant(chat_id=new_chat._id, user_id=other_user_id)
+            ])
+
+            db.session.commit()
+
+            return jsonify({'chat_id': new_chat._id}), 201
+
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Ошибка при создании личного чата')
+            return jsonify({'error': 'Не удалось создать чат'}), 500

@@ -1,62 +1,63 @@
-def get_or_create_chat(user1_name, user2_name, db, Chat, ChatParticipant, User, chatInfo):
+def find_chat(user1_name, user2_name, db, Chat, ChatParticipant, User):
     if user1_name == user2_name:
-        return None  # Нельзя создать чат с самим собой
+        return None
 
-    # Получаем всех участников из chatInfo
-    participant_names = chatInfo.get('chatParticipants', [])
-    if not participant_names:
-        return None  # Без участников смысла нет
+    user1 = User.query.filter_by(name=user1_name).first()
+    user2 = User.query.filter_by(name=user2_name).first()
 
-    # Получаем объекты всех пользователей
-    users = User.query.filter(User.name.in_(participant_names)).all()
-    if len(users) != len(participant_names):
-        return None  # Кто-то из участников не найден
+    if not user1 or not user2:
+        return None
 
-    # Личный чат
-    if chatInfo['isGroup'] == False:
-        user1 = next((u for u in users if u.name == user1_name), None)
-        user2 = next((u for u in users if u.name == user2_name), None)
+    # Находим личный чат, в котором состоят оба пользователя
+    chat = (
+        db.session.query(Chat._id)
+        .join(ChatParticipant, ChatParticipant.chat_id == Chat._id)
+        .filter(
+            Chat.is_group.is_(False),
+            Chat._id.in_(
+                db.session.query(ChatParticipant.chat_id)
+                .filter(ChatParticipant.user_id == user1._id)
+            ),
+            ChatParticipant.user_id == user2._id
+        )
+        .first()
+    )
 
-        # Найдём все чаты user1
-        user1_chats = db.session.query(Chat._id).join(ChatParticipant).filter(
-            ChatParticipant.user_id == user1._id
-        ).subquery()
+    return chat[0] if chat else None
 
-        # Ищем общий чат user1 и user2
-        existing_chat = db.session.query(Chat).join(ChatParticipant).filter(
-            ChatParticipant.user_id == user2._id,
-            Chat._id.in_(user1_chats),
-            Chat.is_group == False
-        ).first()
 
-        if existing_chat:
-            return existing_chat._id
+def create_chat(user1_name, user2_name, db, Chat, ChatParticipant, User):
+    if user1_name == user2_name:
+        return None
 
-        # Создаём новый личный чат
-        new_chat = Chat(is_group=False)
-        db.session.add(new_chat)
+    user1 = User.query.filter_by(name=user1_name).first()
+    user2 = User.query.filter_by(name=user2_name).first()
+
+    if not user1 or not user2:
+        return None
+
+    # Не создаём дубликат, если чат уже появился
+    existing_id = find_chat(
+        user1_name, user2_name, db, Chat, ChatParticipant, User
+    )
+
+    if existing_id is not None:
+        return existing_id
+
+    new_chat = Chat(is_group=False)
+    db.session.add(new_chat)
+
+    try:
+        db.session.flush()  # Получаем ID до создания участников
+
         db.session.add_all([
             ChatParticipant(chat_id=new_chat._id, user_id=user1._id),
             ChatParticipant(chat_id=new_chat._id, user_id=user2._id)
         ])
+
         db.session.commit()
         return new_chat._id
 
-    else:
-        # Групповой чат
-        group_name = chatInfo['name']
-        existing_group = Chat.query.filter_by(name=group_name, is_group=True).first()
-        if existing_group:
-            return existing_group._id
-
-        # Создаём новый групповой чат
-        creator = next((u for u in users if u.name == user1_name), users[0])
-        new_group = Chat(name=group_name, is_group=True, creator_id=creator._id)
-        db.session.add(new_group)
-        db.session.commit()
-
-        db.session.add_all([
-            ChatParticipant(chat_id=new_group._id, user_id=u._id) for u in users
-        ])
-        db.session.commit()
-        return new_group._id
+    except Exception:
+        db.session.rollback()
+        raise

@@ -122,18 +122,41 @@ def register_socket_handlers(socketio):
     @socketio.on("delete_msg")
     def handleDeleteMsg(data):
         print("Data to delete", data)
+
         content = data['text']['selectedMsg']
-        id = content['id']
+        msg_id = content['id']
         chat_id = data['chat_id']
-        msg = Message.query.get(id)
-        if msg:
-            db.session.delete(msg)
-            db.session.commit()
-            emit(
-                'deleted_message', {
-                    'id': msg._id
-                }, room=chat_id
-            )
+
+        msg = Message.query.get(msg_id)
+
+        if not msg:
+            return
+
+        # Проверяем, что сообщение действительно принадлежит указанному чату
+        if msg.chat_id != chat_id:
+            return
+
+        db.session.delete(msg)
+        db.session.flush()  # Применяем удаление до проверки оставшихся сообщений
+
+        # Проверяем, остались ли сообщения в чате
+        remaining_msg = Message.query.filter_by(chat_id=chat_id).first()
+
+        if not remaining_msg:
+            # Сообщений больше нет — удаляем чат
+            chat = Chat.query.get(chat_id)
+
+            if chat:
+                db.session.delete(chat)
+
+        db.session.commit()
+
+        emit(
+            'deleted_message',
+            {'id': msg_id},
+            room=chat_id
+        )
+
     @socketio.on("edit_msg")
     def editing_msg(data):
         msg_id = data["text"]["id"]
@@ -168,19 +191,24 @@ def register_socket_handlers(socketio):
 
             # Собрать реальные чаты и участников
             for chat in user_chats:
-                participants = ChatParticipant.query.filter_by(chat_id=chat._id).all()
+                participants = ChatParticipant.query.filter_by(
+                    chat_id=chat._id
+                ).all()
+
                 participant_names = []
+                other_user_id = None
+
                 for p in participants:
                     if p.user:
                         participant_names.append(p.user.name)
 
-                if not chat.is_group:  # 👈 только для личных чатов
-                    for p in participants:
-                        if p.user and p.user._id != user._id:
+                        if not chat.is_group and p.user._id != user._id:
+                            other_user_id = p.user._id
                             existing_chat_user_ids.add(p.user._id)
 
                 chat_list.append({
                     "id": chat._id,
+                    "user_id": other_user_id,
                     "name": chat.name,
                     "is_group": chat.is_group,
                     "creator_id": chat.creator_id,
@@ -194,7 +222,8 @@ def register_socket_handlers(socketio):
             for rec_user in all_other_users:
                 if rec_user._id not in existing_chat_user_ids:
                     chat_list.append({
-                        "id": None,  # виртуальный чат
+                        "id": None,
+                        "user_id": rec_user._id,
                         "name": rec_user.name,
                         "is_group": False,
                         "creator_id": None,
