@@ -46,6 +46,9 @@ export function User_List({
           className={`user-item ${currentChat === user.name ? 'active' : ''}`}
           onClick={() => handleClick(user)}
         >
+          <span className={"avatar"} aria-hidden="true">
+            {user.name.trim().charAt(0).toUpperCase() || "?"}
+          </span>
           {user.name}
         </div>
       ))}

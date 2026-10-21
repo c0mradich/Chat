@@ -6,20 +6,20 @@
 :root {
     color-scheme: dark;
 
-    --bg: #171b22;
-    --surface: #202630;
+    --bg: linear-gradient(180deg, #222329 0%, #1c1d22 100%);;
+    --surface: linear-gradient(100deg, rgba(123, 143, 255, 0.19), rgba(123, 143, 255, 0.07));
     --surface-hover: #272f3b;
     --input-bg: #191f28;
 
     --text: #e5eaf0;
     --text-muted: #8e9baa;
 
-    --accent: #65c9c0;
-    --accent-hover: #83ded4;
+    --accent: #9aafff;
+    --accent-hover: #9aaeffd7;
     --accent-soft: rgba(101, 201, 192, 0.12);
 
-    --border: #353e4b;
-    --border-hover: #4b596a;
+    --border: rgba(135, 152, 255, 0.22);;
+    --border-hover: rgba(135, 152, 255, 0.22);;
 
     --error: #ff8b94;
     --error-bg: rgba(255, 107, 120, 0.09);
@@ -156,11 +156,8 @@ form .inputContainer input:hover {
 /* Focus */
 
 form .inputContainer input:focus {
-    border-color: var(--accent);
+    border-color: var(--border);
     outline: none;
-
-    box-shadow:
-        0 0 0 3px var(--accent-soft);
 }
 
 /* Placeholder нужен для работы плавающего label */
@@ -205,11 +202,7 @@ form .inputContainer input:focus + label,
 form .inputContainer input:not(:placeholder-shown) + label {
     top: 0;
     left: 10px;
-
-    transform: translateY(-50%);
-
-    color: var(--accent);
-    font-size: 12px;
+    color: rgba(255, 255, 255, 0.863);
 }
 
 /* If input has an icon or custom padding, adjust label separately */
@@ -263,9 +256,6 @@ form > button {
 
 form > button:hover {
     background: var(--accent-hover);
-
-    box-shadow:
-        0 5px 20px rgba(101, 201, 192, 0.12);
 }
 
 form > button:active {
@@ -338,7 +328,7 @@ label {
     align-items: flex-start;
 
     width: 100%;
-    gap: 6px;
+    gap: 10px;
 
     text-align: left;
 }

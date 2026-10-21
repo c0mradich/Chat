@@ -1,15 +1,21 @@
+
 'use client';
+
 import { useState, useEffect } from "react";
 import styles from "./data.module.css";
 
-const apiURL = process.env.NEXT_PUBLIC_API_URL
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PersonalSettings() {
   const [name, setName] = useState("");
-  const [data, setData] = useState("")
+  const [initialName, setInitialName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const hasChanges = name.trim() !== initialName;
+  const isValid = name.trim().length > 3;
 
   useEffect(() => {
     async function fetchName() {
@@ -17,84 +23,192 @@ export default function PersonalSettings() {
         const res = await fetch(`${apiURL}/aboutMe`, {
           credentials: "include",
         });
-        if (!res.ok) throw new Error("Error by loading data");
-        const someData = await res.json();
-        setData(someData)
-        setName(someData.name);
+
+        if (!res.ok) {
+          throw new Error("Не удалось загрузить данные профиля.");
+        }
+
+        const userData = await res.json();
+        const currentName = userData.name ?? "";
+
+        setName(currentName);
+        setInitialName(currentName);
       } catch (e) {
-        setError(e.message);
+        setError(e.message || "Произошла ошибка.");
       } finally {
         setLoading(false);
       }
     }
+
     fetchName();
   }, []);
 
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key === "Enter") {
-        handleSave();
-      }
+  async function handleSave(event) {
+    event.preventDefault();
+
+    const trimmedName = name.trim();
+
+    if (saving || !hasChanges || trimmedName.length <= 3) {
+      return;
     }
 
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  const handleSave = async () => {
-    if(name!==data.name && name.length>3){
     setSaving(true);
-    setError(null);
+    setError("");
+    setSuccess(false);
+
     try {
       const res = await fetch(`${apiURL}/aboutMe`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: trimmedName }),
       });
-      if (!res.ok) throw new Error("Error by saving");
+
+      if (!res.ok) {
+        throw new Error("Не удалось сохранить изменения.");
+      }
+
+      setName(trimmedName);
+      setInitialName(trimmedName);
+      setSuccess(true);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || "Произошла ошибка при сохранении.");
     } finally {
       setSaving(false);
     }
-  };
-    }
+  }
 
-
-
-  if (loading) return <div>Загрузка...</div>;
+  if (loading) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.loadingCard}>
+          <span className={styles.spinner} />
+          <p>Загружаем настройки...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className={styles.container}>
-      <label htmlFor="name" className={styles.label}>
-        Имя пользователя:
-      </label>
-      <input
-        id="name"
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className={styles.input}
-      />
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className={styles.button}
-      >
-        {saving ? "Сохраняю..." : "Сохранить изменения"}
-      </button>
+    <main className={styles.page}>
+      <section className={styles.card}>
+        <div className={styles.topLine}>
+          <a href="/" className={styles.backLink}>
+            <span aria-hidden="true">←</span>
+            <span>Вернуться в чат</span>
+          </a>
 
-      <div>
-        <a href="/" className={styles.link}>
-          Return to chat
-        </a>
-      </div>
+          <span className={styles.settingsBadge}>
+            <span className={styles.statusDot} />
+            Настройки
+          </span>
+        </div>
 
-      {error && <p className={styles.error}>{error}</p>}
-    </div>
+        <header className={styles.header}>
+          <div className={styles.avatar} aria-hidden="true">
+            {name.trim().charAt(0).toUpperCase() || "?"}
+          </div>
+
+          <div>
+            <p className={styles.eyebrow}>ВАШ АККАУНТ</p>
+            <h1 className={styles.title}>Настройки профиля</h1>
+            <p className={styles.subtitle}>
+              Управляйте своими личными данными.
+            </p>
+          </div>
+        </header>
+
+        <div className={styles.divider} />
+
+        <form onSubmit={handleSave} className={styles.form}>
+          <div className={styles.sectionHeading}>
+            <h2>Личная информация</h2>
+            <p>Измените имя, которое видят другие пользователи.</p>
+          </div>
+
+          <label htmlFor="name" className={styles.label}>
+            Имя пользователя
+          </label>
+
+          <div className={styles.inputWrapper}>
+            <span className={styles.inputIcon} aria-hidden="true">
+              @
+            </span>
+
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+                setSuccess(false);
+              }}
+              className={styles.input}
+              placeholder="Введите имя"
+              autoComplete="nickname"
+              minLength={4}
+              maxLength={40}
+              required
+              disabled={saving}
+            />
+          </div>
+
+          <p className={styles.hint}>
+            Не менее 4 символов. Пробелы по краям не учитываются.
+          </p>
+
+          {error && (
+            <div className={styles.errorMessage} role="alert">
+              <span aria-hidden="true">!</span>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className={styles.successMessage} role="status">
+              <span aria-hidden="true">✓</span>
+              Изменения успешно сохранены.
+            </div>
+          )}
+
+          <div className={styles.formFooter}>
+            <span className={styles.changeStatus}>
+              {hasChanges ? "Есть несохранённые изменения" : "Всё актуально"}
+            </span>
+
+            <button
+              type="submit"
+              disabled={saving || !hasChanges || !isValid}
+              className={styles.button}
+            >
+              {saving ? (
+                <>
+                  <span className={styles.buttonSpinner} />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  Сохранить изменения
+                  <span aria-hidden="true">→</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        <footer className={styles.cardFooter}>
+          <span>Настройки аккаунта</span>
+          <span>Личные данные</span>
+        </footer>
+      </section>
+
+      <p className={styles.pageNote}>
+        Изменения вступят в силу после сохранения.
+      </p>
+    </main>
   );
 }

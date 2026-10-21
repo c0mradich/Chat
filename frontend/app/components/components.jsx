@@ -42,7 +42,13 @@ export function leave(name) {
 export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
     return(
         <div className="chat-header">
-            <span>{currentChat || "Select a user"}</span> <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
+          <div className="ChatHeaderInfo">
+          <span className={"avatar"} aria-hidden="true">
+            {currentChat.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+            <span className="UserHeaderInfo">{currentChat || "Select a user"}</span>
+          </div>
+          <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
             <button className="call-btn" onClick={inCall ? endCall : startCall}>{inCall ? '🔴' : '📞'}</button>
         </div>
     )
