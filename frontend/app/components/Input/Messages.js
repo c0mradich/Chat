@@ -1,4 +1,4 @@
-import {useRef, useState} from "react"
+import { useRef, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogActions, Button } from '@mui/material';
 import { formatChatDate } from "../timeFunctions.js";
 import Lightbox from "./LightBox/photoPreview.jsx"
@@ -8,6 +8,32 @@ const apiURL = process.env.NEXT_PUBLIC_API_URL
 export function Messages({ messages, name, handleSendMessage,  setNewMessage, setEditingMsgId}) {
   const [open, setOpen] = useState(false);
   const [selectedMsg, setSelectedMsg] = useState(null);
+
+  const messagesContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+
+  function handleScroll() {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const threshold = 100;
+
+    shouldAutoScrollRef.current =
+      container.scrollHeight -
+      container.scrollTop -
+      container.clientHeight < threshold;
+  }
+
+  useEffect(() => {
+  const container = messagesContainerRef.current;
+
+  if (!container || !shouldAutoScrollRef.current) return;
+
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: "smooth"
+  });
+}, [messages]);
 
   function handleOpenPopup(msg) {
     setSelectedMsg(msg);
@@ -74,7 +100,7 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
 
 
   return (
-    <div className="messages">
+    <div className="messages" ref={messagesContainerRef} onScroll={handleScroll}>
 {messages.map((msg, index) => {
     const isMe = msg.sender === name;
     const displayName = msg.sender;

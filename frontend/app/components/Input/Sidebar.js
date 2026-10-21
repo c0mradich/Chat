@@ -31,11 +31,11 @@ export function User_List({
 
     const chat = chatsInfo.find(chat => chat.name === user.name);
 
-    if (user.id === null) {
-      user.id = await fetchChatId(name, user.name, chat);
-    }
+    // if (user.id === null) {
+    //   user.id = await fetchChatId(name, user.name, chat);
+    // }
 
-    if (chat) setCurrentChatInfo(chat);
+    setCurrentChatInfo(chat ?? user);
   };
 
   return (

@@ -35,8 +35,6 @@ def get_or_create_chat(user1_name, user2_name, db, Chat, ChatParticipant, User, 
         # Создаём новый личный чат
         new_chat = Chat(is_group=False)
         db.session.add(new_chat)
-        db.session.commit()
-
         db.session.add_all([
             ChatParticipant(chat_id=new_chat._id, user_id=user1._id),
             ChatParticipant(chat_id=new_chat._id, user_id=user2._id)

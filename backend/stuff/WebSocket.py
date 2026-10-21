@@ -187,7 +187,6 @@ def register_socket_handlers(socketio):
                     "participants": participant_names
                 })
 
-
             # Найти всех остальных юзеров, кроме текущего
             all_other_users = User.query.filter(User._id != user._id).all()
 
@@ -210,8 +209,6 @@ def register_socket_handlers(socketio):
             emit('get_user_chats', {"error": "Внутренняя ошибка"}, to=request.sid)
 
 
-
-    
     @socketio.on("create_group")
     def create_group(data):
 
@@ -326,20 +323,14 @@ def register_socket_handlers(socketio):
             sid_bytes = r.get(old_key)
             if sid_bytes:
                 sid = sid_bytes.decode("utf-8")
-                
-                # Удаляем старый ключ
                 r.delete(old_key)
-                
-                # Создаём новый
                 r.set(new_key, sid)
-
-                print(f"Redis: {old_key} → {new_key} (sid: {sid})")
             else:
                 print(f"Redis: старый ключ {old_key} не найден")
         except Exception as e:
             print(e)
 
-        # ==========================================
+    # ==========================================
     # WEBRTC CALL SIGNALING
     # ==========================================
 
