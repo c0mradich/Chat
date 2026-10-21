@@ -53,13 +53,13 @@ const {
   setUsers,
   setLoading,
   setChatsInfo,
-  users,
+  currentChat,
   setDialogButtons,
   currentChatInfo,
-  setChatId
+  setChatId,
+  setMessages,
+  fetchMessages
 );
-
-
 
   useEffect(()=>{if(name&&socketConnected)fetchUsers(name,requestUserList);},[name,socketConnected]);
 

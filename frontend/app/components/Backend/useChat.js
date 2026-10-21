@@ -12,10 +12,12 @@ export function useChat(
   setUsers,
   setLoading,
   setChatsInfo,
-  users,
+  currentChat,
   dialogButtons,
   currentChatInfo,
-  setChatId
+  setChatId,
+  setMessages,
+  fetchMessages
 ) {
   const socketRef = useRef(null);
   const [socket, setSocket] = useState(null);
@@ -39,7 +41,11 @@ export function useChat(
     socketRef.current = newSocket;
     setSocket(newSocket);
 
-    newSocket.on('connect', () => setSocketConnected(true));
+    newSocket.on('connect', () => {
+    console.log('Socket подключён:', newSocket.id, 'Пользователь:', name);
+    newSocket.emit('register_user', { name });
+    setSocketConnected(true);
+  });
     newSocket.on('disconnect', () => setSocketConnected(false));
 
     newSocket.on('receive_message', msg => onMessage(msg));
@@ -62,6 +68,34 @@ export function useChat(
       setUsers(prev =>
         prev.map(u => (u.name === oldName ? { ...u, name: newName } : u))
       );
+    });
+
+    newSocket.on('join_chat', async msg => {
+      const invitedChatId = msg.chat_id;
+
+      if (!invitedChatId) {
+        console.error('JOIN_CHAT: chat_id отсутствует', msg);
+        return;
+      }
+
+      console.log('📨 Получено приглашение в чат:', invitedChatId);
+
+      newSocket.emit(
+        'join',
+        {
+          chat_id: invitedChatId,
+          name
+        },
+        result => {
+          if (result?.success) {
+            console.log('✅ Автоматически вошли в комнату:', invitedChatId);
+          } else {
+            console.error('❌ Не удалось войти в комнату:', result);
+          }
+        }
+      );
+      const messages = await fetchMessages(invitedChatId)
+      setMessages(messages)
     });
 
     newSocket.on('get_user_chats', msg => {
@@ -143,6 +177,20 @@ const sendMessage = async (text, path) => {
 
     actualChatId = data.chat_id;
     setChatId(actualChatId);
+    const joinResult = await new Promise((resolve) => {
+      currentSocket.emit(
+        'join',
+        { chat_id: actualChatId, name, other_username: currentChat },
+        resolve
+      );
+    });
+
+    if (!joinResult?.success) {
+      console.error('Не удалось войти в комнату:', joinResult);
+      return;
+    }
+
+    console.log('Успешно вошли в комнату:', actualChatId);
   }
 
   // Не отправляем сообщение без ID чата.

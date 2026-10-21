@@ -15,37 +15,78 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
 
 def register_socket_handlers(socketio):
-    @socketio.on('connect')
-    def on_connect():
-        print('Client connected:', request.sid)
+    @socketio.on('register_user')
+    def register_user(data):
+        name = data.get('name')
+        if not name:
+            return
+        r.set(name, request.sid)
+        print(f"✅ Пользователь зарегистрирован: {name}, SID: {request.sid}")
 
     @socketio.on('join')
     def on_join(data):
         try:
             name = data.get('name')
             chat_id = data.get('chat_id')
+            other_username = data.get('other_username')
             sid = request.sid
+
+            print("OTHER_USERNAME:", other_username)
 
             if not name or not chat_id:
                 print("⚠️ join пропущен — нет name или chat_id")
-                return
+                return {
+                    'success': False,
+                    'error': 'Нет имени или chat_id'
+                }
 
-            # сохраняем связку user -> sid
-            r.set(f"user:{name}", sid)
-
-            # небольшая пауза, чтобы гарантировать, что клиент зарегистрирован
-            time.sleep(0.05)
-
-            # добавляем в комнату
+            # Добавляем текущего пользователя в комнату чата
             join_room(chat_id)
-            print(f"✅ {name} ({sid}) вошёл в комнату {chat_id}")
 
-            # опционально можно уведомить комнату
-            emit("user_joined", {"user": name}, room=chat_id)
+            print(
+                f"✅ {name} ({sid}) вошёл "
+                f"в комнату {chat_id}"
+            )
+
+            # Находим SID собеседника в Redis
+            if other_username:
+                target_sid = r.get(other_username)
+
+                if isinstance(target_sid, bytes):
+                    target_sid = target_sid.decode('utf-8')
+
+                print("TARGET_SID:", target_sid)
+
+                if target_sid:
+                    # Уведомляем собеседника о чате
+                    socketio.emit(
+                        'join_chat',
+                        {'chat_id': chat_id},
+                        to=target_sid
+                    )
+
+                    print(
+                        f"📨 join_chat отправлен пользователю "
+                        f"{other_username}, chat_id={chat_id}"
+                    )
+                else:
+                    print(
+                        f"⚠️ Пользователь {other_username} "
+                        f"не найден в Redis"
+                    )
+
+            return {
+                'success': True,
+                'chat_id': chat_id
+            }
 
         except Exception as e:
             print(f"❌ Ошибка в on_join: {e}")
 
+            return {
+                'success': False,
+                'error': str(e)
+            }
 
     @socketio.on('leave')
     def on_leave(data):
@@ -66,7 +107,6 @@ def register_socket_handlers(socketio):
 
     @socketio.on('send_message')
     def handle_send_message(data):
-        print("RAW DATA:", data)  # теперь точно выведет
         chat_id = data['chat_id']
         sender_name = data['sender']
         text = data['text']
@@ -476,3 +516,8 @@ def register_socket_handlers(socketio):
         except Exception as e:
             print(f"❌ Ошибка call_end: {e}")
 
+
+    @socketio.on('test_ack')
+    def test_ack(data):
+        print("TEST ACK RECEIVED:", data)
+        return {"success": True, "message": "Hello from server"}
