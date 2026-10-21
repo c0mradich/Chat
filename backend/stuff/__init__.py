@@ -22,10 +22,13 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
 )
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+uploads_path = os.path.join(basedir, 'uploads')
+os.makedirs(uploads_path, exist_ok=True)
+
 if DATABASE_URL:
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
-    basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, '..', '..', 'instance', 'users.sqlite3')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
