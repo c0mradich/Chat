@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogActions, Button } from '@mui/material';
 import { formatChatDate } from "../timeFunctions.js";
 import Lightbox from "./LightBox/photoPreview.jsx"
+import { a } from "framer-motion/client";
+import Link from "next/link";
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL
 
@@ -59,10 +61,14 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
   }
 
   function renderContent(msg) {
-  const { content, text } = msg;
+    const { content, text } = msg;
 
-  if (!content) return <div className="message-text">{text}</div>;
-
+  if (!content) {
+    if (text.includes('https://') || text.includes('http://')) {
+      return <a className="ExternalLinkMessage" href={text}>{text}</a>;
+    }
+    return <div className="message-text">{text}</div>;
+  }
   // Проверяем base64
   if (typeof content === 'string' && content.startsWith('data:')) {
     try {
@@ -156,12 +162,7 @@ export function Messages({ messages, name, handleSendMessage,  setNewMessage, se
                             })}</span>
                         </div>
                     )}
-
-                    {msg.content && msg.content.trim() !== '' ? (
-                        renderContent(msg)
-                    ) : (
-                        <div className="message-text">{msg.text}</div>
-                    )}
+                        {renderContent(msg)}
                 </>
             )}
         </div>

@@ -1057,3 +1057,8 @@ img{
   gap: 10px;
   min-width: 0;
 }
+
+.ExternalLinkMessage{
+  color: #3390EC;
+  text-decoration: underline;
+}

@@ -42,7 +42,7 @@ export function useChat(
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-    console.log('Socket подключён:', newSocket.id, 'Пользователь:', name);
+    // console.log('Socket подключён:', newSocket.id, 'Пользователь:', name);
     newSocket.emit('register_user', { name });
     setSocketConnected(true);
   });
@@ -77,9 +77,6 @@ export function useChat(
         console.error('JOIN_CHAT: chat_id отсутствует', msg);
         return;
       }
-
-      console.log('📨 Получено приглашение в чат:', invitedChatId);
-
       newSocket.emit(
         'join',
         {
@@ -87,11 +84,11 @@ export function useChat(
           name
         },
         result => {
-          if (result?.success) {
-            console.log('✅ Автоматически вошли в комнату:', invitedChatId);
-          } else {
-            console.error('❌ Не удалось войти в комнату:', result);
-          }
+          // if (result?.success) {
+          //   console.log('✅ Автоматически вошли в комнату:', invitedChatId);
+          // } else {
+          //   console.error('❌ Не удалось войти в комнату:', result);
+          // }
         }
       );
       const messages = await fetchMessages(invitedChatId)
@@ -190,7 +187,7 @@ const sendMessage = async (text, path) => {
       return;
     }
 
-    console.log('Успешно вошли в комнату:', actualChatId);
+    // console.log('Успешно вошли в комнату:', actualChatId);
   }
 
   // Не отправляем сообщение без ID чата.
