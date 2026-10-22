@@ -214,68 +214,101 @@ def register_socket_handlers(socketio):
     @socketio.on("get_userlist")
     def get_users_and_chats(data):
         try:
-            user_name = data['text']['name']
-            # Найти пользователя по имени
+            user_name = data["text"]["name"]
+
+            # Найти текущего пользователя
             user = User.query.filter_by(name=user_name).first()
+
             if not user:
-                emit('get_user_chats', {"error": "Пользователь не найден"}, to=request.sid)
+                emit(
+                    "get_user_chats",
+                    {"error": "Пользователь не найден"},
+                    to=request.sid
+                )
                 return
 
-            # Все чаты, где участвует пользователь
-            matching_participants = ChatParticipant.query.filter_by(user_id=user._id).all()
+            # Получить чаты, в которых состоит пользователь
+            matching_participants = ChatParticipant.query.filter_by(
+                user_id=user._id
+            ).all()
+
             chat_ids = [p.chat_id for p in matching_participants]
-            user_chats = Chat.query.filter(Chat._id.in_(chat_ids)).all()
+
+            user_chats = Chat.query.filter(
+                Chat._id.in_(chat_ids)
+            ).all()
 
             chat_list = []
             existing_chat_user_ids = set()
 
-            # Собрать реальные чаты и участников
+            # Собрать информацию о существующих чатах
             for chat in user_chats:
                 participants = ChatParticipant.query.filter_by(
                     chat_id=chat._id
                 ).all()
 
                 participant_names = []
-                other_user_id = None
+                other_user = None
 
                 for p in participants:
-                    if p.user:
-                        participant_names.append(p.user.name)
+                    if not p.user:
+                        continue
 
-                        if not chat.is_group and p.user._id != user._id:
-                            other_user_id = p.user._id
-                            existing_chat_user_ids.add(p.user._id)
+                    participant_names.append(p.user.name)
+
+                    # Для личного чата определяем собеседника
+                    if not chat.is_group and p.user._id != user._id:
+                        other_user = p.user
+                        existing_chat_user_ids.add(p.user._id)
 
                 chat_list.append({
                     "id": chat._id,
-                    "user_id": other_user_id,
+                    "user_id": other_user._id if other_user else None,
                     "name": chat.name,
+                    "avatar": other_user.avatar if other_user else None,
                     "is_group": chat.is_group,
                     "creator_id": chat.creator_id,
                     "participants": participant_names
                 })
 
-            # Найти всех остальных юзеров, кроме текущего
-            all_other_users = User.query.filter(User._id != user._id).all()
+            # Найти остальных пользователей
+            all_other_users = User.query.filter(
+                User._id != user._id
+            ).all()
 
-            # Добавить виртуальные чаты для юзеров, с которыми ещё нет чатов
+            # Добавить виртуальные личные чаты для пользователей,
+            # с которыми ещё нет существующего личного чата
             for rec_user in all_other_users:
                 if rec_user._id not in existing_chat_user_ids:
                     chat_list.append({
                         "id": None,
                         "user_id": rec_user._id,
                         "name": rec_user.name,
+                        "avatar": rec_user.avatar,
                         "is_group": False,
                         "creator_id": None,
-                        "participants": [rec_user.name, user.name]
+                        "participants": [user.name, rec_user.name]
                     })
 
-            # Отправка всех чатов
-            emit('get_user_chats', {"name": user_name, "chats": chat_list}, to=request.sid)
+            # Отправить список клиенту
+            emit(
+                "get_user_chats",
+                {
+                    "name": user.name,
+                    "chats": chat_list
+                },
+                to=request.sid
+            )
 
         except Exception as e:
+            db.session.rollback()
             print(f"Ошибка в get_users_and_chats: {e}")
-            emit('get_user_chats', {"error": "Внутренняя ошибка"}, to=request.sid)
+
+            emit(
+                "get_user_chats",
+                {"error": "Внутренняя ошибка"},
+                to=request.sid
+            )
 
 
     @socketio.on("create_group")

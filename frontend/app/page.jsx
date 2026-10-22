@@ -115,7 +115,7 @@ const {
 
       {currentChat&&(
         <div className="chat-area">
-          <ChatHeader currentChat={currentChat}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}/>
+          <ChatHeader currentChatInfo={currentChatInfo}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}/>
           <Messages ref={messagesWindow}messages={messages}name={name}
             handleSendMessage={wsSendMessage}setNewMessage={setNewMessage}
             setEditingMsgId={setEditingMsgId}/>

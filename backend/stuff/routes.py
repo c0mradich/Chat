@@ -3,7 +3,7 @@ from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import find_chat, create_chat
 from Python_Utils.mime import get_mime_type_from_extension
-from Python_Utils.func import generate_file_hash
+from Python_Utils.func import generate_file_hash4
 import base64, os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
@@ -11,6 +11,7 @@ from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+UPLOAD_AVATARS_DIR = os.path.join(BASE_DIR, 'avatars')
 
 
 def register_routes(app, socketio):
@@ -182,7 +183,7 @@ def register_routes(app, socketio):
         chat_id = request.form.get("chatId")
 
         timestamp = datetime.utcnow().isoformat()
-        hashed_filename = generate_file_hash(filename, sender, chat_id, timestamp)
+        hashed_filename = generate_file_hash4(filename, sender, chat_id, timestamp)
         save_path = os.path.join(UPLOAD_FOLDER, hashed_filename)
         file.save(save_path)          # сохраняем на диск
         
@@ -254,6 +255,7 @@ def register_routes(app, socketio):
     def aboutMe():
         username = session.get("username")
         user_id = session.get("user_id")
+        user_avatar = User.query.get(user_id).avatar
         if not username or not user_id:
             return jsonify({"error": "Неавторизованный"}), 401
 
@@ -278,9 +280,73 @@ def register_routes(app, socketio):
             return jsonify({"success": True})
 
         else:
-            return jsonify({"name": username})
+            return jsonify({"name": username, "avatar": user_avatar})
 
 
+    @app.route("/changeAvatar", methods=["POST"])
+    def change_avatar():
+        user_id = session.get("user_id")
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "message": "Необходима авторизация."
+            }), 401
+
+        user = db.session.get(User, user_id)
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Пользователь не найден."
+            }), 404
+
+        avatar = request.files.get("avatar")
+
+        if not avatar or not avatar.filename:
+            return jsonify({
+                "success": False,
+                "message": "Файл не передан."
+            }), 400
+
+        filename = avatar.filename
+        timestamp = datetime.utcnow().isoformat()
+        hashed_filename = generate_file_hash4(
+            filename, user.name, timestamp, ''
+        )
+
+        save_path = os.path.join(UPLOAD_AVATARS_DIR, hashed_filename)
+
+        try:
+            avatar.save(save_path)
+
+            user.avatar = f"/avatars/{hashed_filename}"
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+
+            if os.path.exists(save_path):
+                os.remove(save_path)
+
+            app.logger.exception("Ошибка сохранения аватара")
+
+            return jsonify({
+                "success": False,
+                "message": "Не удалось сохранить аватар."
+            }), 500
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "path": user.avatar
+        }), 200
+
+
+    @app.route("/avatars/<path:filename>", methods=["GET"])
+    def get_avatars(filename):
+        return send_from_directory(UPLOAD_AVATARS_DIR, filename)
+    
     @app.route('/find_chat/<int:other_user_id>', methods=['GET'])
     def find_personal_chat(other_user_id):
         user_id = session.get('user_id')

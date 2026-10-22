@@ -2,6 +2,8 @@ import OptionsMenu from "../Backend/group_chat"
 import  fetchChatId  from "../Backend/fetchChatId";
 import { useCallback } from "react";
 
+const apiURL = process.env.NEXT_PUBLIC_API_URL;
+
 export function Sidebar({ searchQuery,setSearchQuery, users, handleSendMessage, name, currentChatInfo, sideBarOpen, requestUserList}){
     return (
         <div className={`search-container ${sideBarOpen?'':'close'}`}>
@@ -30,37 +32,29 @@ export function User_List({
 const handleClick = async (user) => {
   setCurrentChat(user.name);
 
-  // Для существующей группы поиск личного чата не нужен
-  if (user.isGroup) {
-    setCurrentChatInfo({
-      id: user.id,
-      userId: null,
-      name: user.name,
-      isGroup: true,
-      chatParticipants: user.chatParticipants
-    });
-    return;
-  }
-
-  // Сначала сохраняем выбранного собеседника
-  setCurrentChatInfo({
-    id: null,
-    userId: user.userId,
+  const chatInfo = {
+    id: user.isGroup ? user.id : null,
+    userId: user.isGroup ? null : user.userId,
     name: user.name,
-    isGroup: false,
+    avatar: user.avatar,
+    isGroup: user.isGroup,
     chatParticipants: user.chatParticipants
-  });
+  };
+
+  // Сразу показываем выбранный чат
+  setCurrentChatInfo(chatInfo);
+
+  // Для группы больше ничего делать не нужно
+  if (user.isGroup) return;
 
   try {
     const chatId = await fetchChatId(user.userId);
 
-    setCurrentChatInfo({
-      id: chatId,
-      userId: user.userId,
-      name: user.name,
-      isGroup: false,
-      chatParticipants: user.chatParticipants
-    });
+    setCurrentChatInfo(prev =>
+      prev?.userId === user.userId
+        ? { ...prev, id: chatId }
+        : prev
+    );
   } catch (error) {
     console.error('Не удалось найти чат:', error);
   }
@@ -75,9 +69,17 @@ const handleClick = async (user) => {
           className={`user-item ${currentChat === user.name ? 'active' : ''}`}
           onClick={() => handleClick(user)}
         >
-          <span className={"avatar"} aria-hidden="true">
+        {user.avatar ? (
+          <img
+            src={`${apiURL}/${user.avatar}`}
+            alt=""
+            className="avatar"
+          />
+        ) : (
+          <span className="avatar" aria-hidden="true">
             {user.name.trim().charAt(0).toUpperCase() || "?"}
           </span>
+        )}
           {user.name}
         </div>
       ))}

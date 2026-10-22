@@ -39,14 +39,23 @@ export function leave(name) {
   });
 }
 
-export function ChatHeader({currentChat, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
+export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
+  console.log(currentChatInfo)
     return(
         <div className="chat-header">
           <div className="ChatHeaderInfo">
-          <span className={"avatar"} aria-hidden="true">
-            {currentChat.trim().charAt(0).toUpperCase() || "?"}
-          </span>
-            <span className="UserHeaderInfo">{currentChat || "Select a user"}</span>
+          {currentChatInfo.avatar ? (
+            <img
+                src={`${apiURL}/${currentChatInfo.avatar}`}
+                alt=""
+                className="avatar"
+              />
+            ) : (
+              <span className="avatar" aria-hidden="true">
+                {currentChatInfo.name.trim().charAt(0).toUpperCase() || "?"}
+              </span>
+            )}
+            <span className="UserHeaderInfo">{currentChatInfo.name || "Select a user"}</span>
           </div>
           <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
             <button className="call-btn" onClick={inCall ? endCall : startCall}>{inCall ? '🔴' : '📞'}</button>

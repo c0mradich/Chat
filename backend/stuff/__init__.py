@@ -23,7 +23,9 @@ app.config.update(
 )
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+uploads_avatars_path = os.path.join(basedir, 'avatars')
 uploads_path = os.path.join(basedir, 'uploads')
+os.makedirs(uploads_avatars_path, exist_ok=True)
 os.makedirs(uploads_path, exist_ok=True)
 
 if DATABASE_URL:

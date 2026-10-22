@@ -1,18 +1,22 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./data.module.css";
+import { changeAvatar } from "../components/Input/changeAvatar";
+
 
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PersonalSettings() {
+  const fileInputRef = useRef(null);
   const [name, setName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [avatar, setAvatar] = useState(null)
 
   const hasChanges = name.trim() !== initialName;
   const isValid = name.trim().length > 3;
@@ -29,7 +33,10 @@ export default function PersonalSettings() {
         }
 
         const userData = await res.json();
+        console.log(userData)
         const currentName = userData.name ?? "";
+        const  avatar_from_data = userData.avatar ?? ""
+        avatar_from_data && setAvatar(avatar_from_data)
 
         setName(currentName);
         setInitialName(currentName);
@@ -108,8 +115,43 @@ export default function PersonalSettings() {
 
         <header className={styles.header}>
           <div className={styles.avatar} aria-hidden="true">
-            {name.trim().charAt(0).toUpperCase() || "?"}
+
+            {!avatar ? (
+              name.trim().charAt(0).toUpperCase() || "?"
+            ) : (
+              <img
+                src={`${apiURL}/${avatar}`}
+                alt="Аватар"
+                className={styles.avatarImage}
+              />
+            )}
+              <button
+                type="button"
+                className={styles.avatarUpload}
+                aria-label="Select Image"
+                onClick={() => fileInputRef.current?.click()}
+              />
           </div>
+            <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={async (e) => {
+                const result = await changeAvatar(e, name);
+
+                if (!result.success) {
+                  setError(result.message);
+                  return;
+                }
+
+                setSuccess(result.message);
+                console.log(result)
+                const path = result.data.path
+                setAvatar(path)
+              }
+            }
+          />
 
           <div>
             <p className={styles.eyebrow}>ВАШ АККАУНТ</p>

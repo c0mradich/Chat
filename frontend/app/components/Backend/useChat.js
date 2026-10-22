@@ -83,13 +83,6 @@ export function useChat(
           chat_id: invitedChatId,
           name
         },
-        result => {
-          // if (result?.success) {
-          //   console.log('✅ Автоматически вошли в комнату:', invitedChatId);
-          // } else {
-          //   console.error('❌ Не удалось войти в комнату:', result);
-          // }
-        }
       );
       const messages = await fetchMessages(invitedChatId)
       setMessages(messages)
@@ -108,11 +101,11 @@ export function useChat(
           id: chat.id,
           userId: chat.user_id,
           name: chatName,
+          avatar: chat.avatar,
           isGroup: chat.is_group,
           chatParticipants: chat.participants
         });
       }
-
       setUsers(arr);
       setChatsInfo(arr);
       setLoading(false);
@@ -204,7 +197,6 @@ const sendMessage = async (text, path) => {
 
   dialogButtons(0);
 };
-
 
   return {
   sendMessage,

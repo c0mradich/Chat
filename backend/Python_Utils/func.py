@@ -1,6 +1,6 @@
 import hashlib, os
 
-def generate_file_hash(original_name, sender, chat_id, timestamp):
+def generate_file_hash4(original_name, sender, chat_id, timestamp):
     # Составляем строку для хеширования
     data_string = f"{original_name}{sender}{chat_id}{timestamp}"
     # Генерим SHA-256 хеш
