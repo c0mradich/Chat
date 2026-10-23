@@ -18,8 +18,10 @@ ph = PasswordHasher()
 Su_name = os.environ.get("SU_NAME")
 Su_password = os.environ.get("SU_PASSWORD")
 
-if not Su_name or not Su_password:
+if not Su_name:
     Su_name = "root"
+    
+if not Su_password:
     Su_password = "root"
 
 SU_name_hashed = ph.hash(Su_name)
