@@ -105,16 +105,16 @@ const {
   return(
     <div className="chat-container">
       <Progress loading={loading}error={error} statusOverlay={statusOverlay}/>
-      <div className="sidebar">
+      <div className={`sidebar ${!sideBarOpen && 'inactive'}`}>
         <Sidebar searchQuery={searchQuery}setSearchQuery={setSearchQuery}users={users}
           handleSendMessage={wsSendMessage}name={name}
           currentChatInfo={currentChatInfo}sideBarOpen={sideBarOpen}requestUserList={requestUserList}/>
         <User_List FilteredUsers={FilteredUsers}setCurrentChat={setCurrentChat}currentChat={currentChat}
-          chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}name={name}Sidebar={sideBarOpen}/>
+          chatsInfo={users}setCurrentChatInfo={setCurrentChatInfo}name={name}Sidebar={sideBarOpen}setSidebarOpen={setSideBarOpen}/>
       </div>
 
       {currentChat&&(
-        <div className="chat-area">
+        <div className={`chat-area ${sideBarOpen && 'inactive'}`}>
           <ChatHeader currentChatInfo={currentChatInfo}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}/>
           <Messages ref={messagesWindow}messages={messages}name={name}
             handleSendMessage={wsSendMessage}setNewMessage={setNewMessage}

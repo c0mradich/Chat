@@ -44,6 +44,26 @@ export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startC
     return(
         <div className="chat-header">
           <div className="ChatHeaderInfo">
+          <button
+            type="button"
+            onClick={() => setSideBarOpen(!sideBarOpen)}
+            className="hamburger"
+            aria-label={sideBarOpen ? "Закрыть список чатов" : "Открыть список чатов"}
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
           {currentChatInfo.avatar ? (
             <img
                 src={`${apiURL}/${currentChatInfo.avatar}`}
@@ -57,7 +77,6 @@ export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startC
             )}
             <span className="UserHeaderInfo">{currentChatInfo.name || "Select a user"}</span>
           </div>
-          <span onClick={()=>{setSideBarOpen(!sideBarOpen)}} className="hamburger">&#9776;</span>
             <button className="call-btn" onClick={inCall ? endCall : startCall}>{inCall ? '🔴' : '📞'}</button>
         </div>
     )

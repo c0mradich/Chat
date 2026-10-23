@@ -114,44 +114,49 @@ export default function PersonalSettings() {
         </div>
 
         <header className={styles.header}>
-          <div className={styles.avatar} aria-hidden="true">
-
+          <div className={styles.avatarWrapper}>
             {!avatar ? (
-              name.trim().charAt(0).toUpperCase() || "?"
+              <div className={styles.avatar} aria-hidden="true">
+                {name.trim().charAt(0).toUpperCase() || "?"}
+              </div>
             ) : (
               <img
-                src={`${apiURL}/${avatar}`}
+                src={`${apiURL}${avatar.startsWith("/") ? "" : "/"}${avatar}`}
                 alt="Аватар"
                 className={styles.avatarImage}
               />
             )}
-              <button
-                type="button"
-                className={styles.avatarUpload}
-                aria-label="Select Image"
-                onClick={() => fileInputRef.current?.click()}
-              />
-          </div>
+
+            <button
+              type="button"
+              className={styles.avatarUpload}
+              aria-label="Изменить аватар"
+              title="Изменить аватар"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              ✎
+            </button>
+
             <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={async (e) => {
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              hidden
+              onChange={async (e) => {
                 const result = await changeAvatar(e, name);
 
                 if (!result.success) {
                   setError(result.message);
+                  e.target.value = "";
                   return;
                 }
 
                 setSuccess(result.message);
-                console.log(result)
-                const path = result.data.path
-                setAvatar(path)
-              }
-            }
-          />
+                setAvatar(result.path);
+                e.target.value = "";
+              }}
+            />
+          </div>
 
           <div>
             <p className={styles.eyebrow}>ВАШ АККАУНТ</p>

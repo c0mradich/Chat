@@ -174,27 +174,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Планшеты и телефоны */
-@media (max-width: 700px) {
-  .sidebar {
-    width: 240px;
-    min-width: 200px;
-    padding: 14px 10px;
-  }
-
-  .user-item {
-    padding: 11px 10px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .search-input,
-  .user-item {
-    transition: none;
-  }
-}
-
-
 /* Чат */
 
 .chat-area {
@@ -284,19 +263,6 @@ body {
     0 0 20px rgba(100, 125, 210, 0.05);
 }
 
-@media (max-width: 600px) {
-  .chat-area {
-    padding: 6px;
-    gap: 8px;
-    border-radius: 10px;
-  }
-
-  .chat-header {
-    padding: 14px;
-    font-size: 17px;
-  }
-}
-
 img{
   max-width: 40%;
   max-height: 300px;
@@ -366,16 +332,6 @@ img{
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .messages {
-    scroll-behavior: auto;
-  }
-
-  .messages > * {
-    animation: none;
   }
 }
 
@@ -531,23 +487,6 @@ img{
   outline-offset: 3px;
 }
 
-@media (max-width: 480px) {
-  .chat-input {
-    gap: 6px;
-    padding: 7px;
-  }
-
-  .chat-input input {
-    padding: 10px 8px;
-    font-size: 16px;
-  }
-
-  .chat-input button {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
-}
-
 .input-layer {
   display: flex;
   flex-direction: row;
@@ -625,150 +564,6 @@ img{
 
 .file-upload input[type="file"] {
   display: none;
-}
-
-@media (max-width: 480px) {
-  .input-layer {
-    gap: 6px;
-    padding: 6px;
-  }
-
-  .input-buttons {
-    gap: 5px;
-  }
-
-  .input-buttons button {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .input-layer,
-  .input-buttons button {
-    transition: none;
-  }
-}
-
-/* === Общие стили остаются === */
-
-/* Адаптивка */
-@media (max-width: 1024px) {
-  .chat-container {
-    flex-direction: column;
-    width: 95%;
-    height: 95%;
-  }
-
-  .sidebar {
-    width: 100%;
-    border-radius: 8px 8px 0 0;
-    padding: 15px;
-  }
-
-  .chat-area {
-    border-radius: 0 0 8px 8px;
-    padding: 15px;
-  }
-
-  .messages {
-    gap: 6px;
-    padding-right: 5px;
-  }
-
-  .message {
-    max-width: 80%;
-    padding: 8px 12px;
-  }
-
-  .chat-input input {
-    font-size: 14px;
-    padding: 10px;
-  }
-
-  .input-buttons button {
-    padding: 8px;
-    font-size: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .chat-container {
-    height: 100%;
-    width: 100%;
-    border-radius: 0;
-  }
-
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-  }
-.close{
-    display: none; /* убираем сайдбар на маленьких экранах */
-}
-  .chat-area {
-    flex-grow: 1;
-    padding: 10px;
-  }
-
-  .messages {
-    gap: 4px;
-    padding-right: 0;
-  }
-
-  .message {
-    max-width: 90%;
-    font-size: 0.85rem;
-  }
-
-  .chat-header {
-    font-size: 18px;
-  }
-
-  .chat-input {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .chat-input input {
-    width: 100%;
-  }
-
-  .input-buttons {
-    justify-content: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .message {
-    max-width: 100%;
-    font-size: 0.8rem;
-    padding: 6px 10px;
-  }
-
-  .chat-header {
-    font-size: 16px;
-  }
-
-  .input-buttons button {
-    padding: 6px;
-    font-size: 14px;
-  }
-
-  .audio-msg-btn,
-  .video-call-btn,
-  .call-btn,
-  .send-btn {
-    font-size: 28px;
-    padding: 12px;
-  }
-}
-
-@media (min-width: 600px) {
-  .hamburger {
-    display: none; /* скрываем гамбургер на больших экранах */
-  }
 }
 
 .lightbox {
@@ -1021,13 +816,6 @@ img{
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .loader,
-  .status-card {
-    animation: none;
-  }
-}
-
 
 .avatar {
   width: 32px;
@@ -1061,4 +849,388 @@ img{
 .ExternalLinkMessage{
   color: #3390EC;
   text-decoration: underline;
+}
+
+/* =========================================
+   TABLETS: до 1024px
+   ========================================= */
+@media (max-width: 1024px) {
+  .chat-container {
+    flex-direction: row;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 0;
+  }
+
+  .sidebar {
+    flex: 0 0 220px;
+    width: 220px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .chat-area {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  .message {
+    max-width: 85%;
+    overflow-wrap: anywhere;
+  }
+
+  .message-text {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .chat-input {
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .chat-input input {
+    min-width: 0;
+  }
+}
+
+
+/* =========================================
+   PHONES: до 768px
+   Список пользователей слева, чат справа
+   ========================================= */
+@media (max-width: 768px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .chat-container {
+    display: flex;
+    flex-direction: row !important;
+    align-items: stretch;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 0;
+  }
+
+  /* Левая панель */
+@media (max-width: 768px) {
+  .sidebar {
+    display: flex;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px;
+
+    overflow: hidden;
+    border-radius: 0;
+    border-top: none;
+    border-bottom: none;
+  }
+
+  .sidebar.inactive {
+    display: none;
+  }
+
+  .chat-area.inactive {
+    display: none;
+  }
+
+  .chat-area {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+  /* Скрываем панель, когда закрыта
+  .sidebar.close {
+    display: none;
+  } */
+
+  /* Поиск */
+  .search-container {
+    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .search-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 9px 7px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  /* Список пользователей */
+  .user-list {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .user-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 9px 5px;
+    font-size: 12px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    border-radius: 8px;
+  }
+
+  .user-item .avatar,
+  .user-item img.avatar {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+    max-height: 28px;
+    margin: 0;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  /* Правая часть — чат */
+  .chat-area {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    gap: 7px;
+    padding: 6px;
+    overflow: hidden;
+    border-radius: 0;
+  }
+
+  /* Шапка чата */
+  .chat-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px 8px;
+    font-size: 15px;
+    letter-spacing: 0;
+  }
+
+  .ChatHeaderInfo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .UserHeaderInfo {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Переписка */
+  .messages {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    gap: 4px;
+    padding: 10px 5px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .message {
+    max-width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .message-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Поле ввода — всегда в одну строку */
+  .chat-input {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    margin-top: 0;
+    padding: 5px;
+  }
+
+  .chat-input input {
+    flex: 1 1 auto;
+    width: 0;
+    min-width: 0;
+    padding: 10px 5px;
+    font-size: 16px;
+  }
+
+  .input-layer {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 4px;
+    padding: 0;
+  }
+
+  .input-buttons {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .input-buttons button {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 15px;
+  }
+
+  /* Кнопка открытия/закрытия списка */
+  .hamburger {
+    display: inline-flex;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL PHONES: до 360px
+   ========================================= */
+@media (max-width: 360px) {
+  .sidebar {
+    flex-basis: 108px;
+    width: 108px;
+    padding: 8px 4px;
+    gap: 7px;
+  }
+
+  .user-item {
+    gap: 4px;
+    padding: 8px 3px;
+    font-size: 11px;
+  }
+
+  .user-item .avatar,
+  .user-item img.avatar {
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    max-height: 24px;
+  }
+
+  .chat-area {
+    gap: 5px;
+    padding: 4px;
+  }
+
+  .chat-header {
+    gap: 4px;
+    padding: 10px 5px;
+    font-size: 13px;
+  }
+
+  .ChatHeaderInfo {
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .messages {
+    padding: 8px 3px;
+  }
+
+  .message {
+    font-size: 12px;
+  }
+
+  .chat-input {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .chat-input input {
+    padding: 9px 4px;
+    font-size: 16px;
+  }
+
+  .input-buttons {
+    gap: 2px;
+  }
+
+  .input-buttons button {
+    width: 27px;
+    height: 29px;
+    font-size: 13px;
+  }
+}
+
+/* По умолчанию — на больших экранах кнопка скрыта */
+.hamburger {
+  display: none;
+}
+
+/* На телефонах показываем кнопку */
+@media (max-width: 768px) {
+  .hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .inactive{
+    display: none;
+  }
 }

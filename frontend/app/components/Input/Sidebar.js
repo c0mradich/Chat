@@ -26,7 +26,8 @@ export function User_List({
   chatsInfo,
   setCurrentChatInfo,
   name,
-  Sidebar
+  Sidebar,
+  setSidebarOpen
 }) {
 
 const handleClick = async (user) => {
@@ -43,6 +44,7 @@ const handleClick = async (user) => {
 
   // Сразу показываем выбранный чат
   setCurrentChatInfo(chatInfo);
+  setSidebarOpen(false)
 
   // Для группы больше ничего делать не нужно
   if (user.isGroup) return;
