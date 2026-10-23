@@ -3,110 +3,742 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель</title>
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#08090c">
+    <title>Admin Panel</title>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
         }
-        h1, h2, h3 {
-            color: #333;
+
+        :root {
+            --bg: #08090c;
+            --surface: #101116;
+            --surface-light: #17181f;
+            --text: #eeedf0;
+            --muted: #898b98;
+            --red: #ff3548;
+            --red-dark: #8f1726;
+            --border: rgba(255, 255, 255, 0.09);
+            --green: #53d99a;
         }
+
+        body {
+            min-height: 100vh;
+            padding: 36px;
+            overflow-x: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(
+                    ellipse at 8% 20%,
+                    rgba(255, 30, 55, 0.10),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    ellipse at 90% 10%,
+                    rgba(35, 90, 130, 0.08),
+                    transparent 35%
+                );
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            animation: appear 0.6s ease-out both;
+        }
+
+        /* Заголовок */
+
+        .topline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            color: var(--red);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .topline::before {
+            content: "";
+            width: 28px;
+            height: 1px;
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+
+        .topline::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 36px;
+        }
+
+        .eyebrow {
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(34px, 5vw, 48px);
+            font-weight: 400;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+        }
+
+        h1 span {
+            color: var(--red);
+        }
+
+        .header-description {
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.025);
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px rgba(83, 217, 154, 0.55);
+        }
+
+        /* Карточки */
+
+        .card {
+            position: relative;
+            min-width: 0;
+            margin-bottom: 24px;
+            padding: 28px;
+            overflow: hidden;
+            background: linear-gradient(
+                145deg,
+                rgba(23, 24, 31, 0.97),
+                rgba(10, 11, 15, 0.98)
+            );
+            border: 1px solid var(--border);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 53, 72, 0.65),
+                transparent
+            );
+            opacity: 0.65;
+        }
+
+        .card-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 25px;
+            font-weight: 400;
+        }
+
+        .card-number {
+            color: var(--red);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        .card-count {
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        /* Таблица пользователей */
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ccc;
-        }
-        th, td {
-            padding: 10px;
             text-align: left;
+            font-size: 13px;
         }
+
+        thead {
+            background: rgba(255, 255, 255, 0.035);
+        }
+
         th {
-            background-color: #e6e6e6;
+            padding: 15px 18px;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            white-space: nowrap;
         }
-        .card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        td {
+            padding: 16px 18px;
+            color: #d6d6dd;
+            border-top: 1px solid var(--border);
         }
-        ul {
-            margin: 0;
-            padding-left: 20px;
+
+        tbody tr {
+            transition: background 0.2s ease;
         }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .user-id {
+            color: var(--muted);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .username {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .online-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .online-status::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .online-status.online {
+            color: var(--green);
+        }
+
+        .online-status.online::before {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(83, 217, 154, 0.5);
+        }
+
+        .online-status.offline {
+            color: var(--muted);
+        }
+
+        .online-status.offline::before {
+            background: #666874;
+        }
+
+        /* Чаты */
+
+        .chat-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+            gap: 16px;
+        }
+
+        .chat-item {
+            min-width: 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.018);
+            border: 1px solid var(--border);
+            transition:
+                border-color 0.2s ease,
+                background 0.2s ease;
+        }
+
+        .chat-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 53, 72, 0.3);
+        }
+
         .chat-header {
-            font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 18px;
+            overflow-wrap: anywhere;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.9;
         }
-        .message-list li {
-            margin-bottom: 10px;
+
+        .chat-header span {
+            color: var(--muted);
+            font-weight: 400;
+        }
+
+        .chat-name {
+            color: var(--red);
+        }
+
+        .chat-type {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 3px 6px;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .participants-title {
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: 9px;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+        }
+
+        .participants {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .participants li {
+            max-width: 100%;
+            padding: 7px 10px;
+            overflow-wrap: anywhere;
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid var(--border);
+            color: #c8c8d1;
+            font-size: 11px;
+        }
+
+        .empty-state {
+            padding: 24px;
+            color: var(--muted);
+            font-size: 12px;
+            text-align: center;
+            border: 1px dashed var(--border);
+        }
+
+        /* Сообщения */
+
+        .message-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .message-item {
+            min-width: 0;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.018);
+            border: 1px solid var(--border);
+            border-left: 2px solid rgba(255, 53, 72, 0.7);
+        }
+
+        .message-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 18px;
+            margin-bottom: 14px;
+        }
+
+        .message-sender {
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .message-chat {
+            color: var(--red);
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .message-time {
+            margin-left: auto;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .message-label {
+            margin-bottom: 7px;
+            color: var(--muted);
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .message-text {
+            color: #d6d6dd;
+            font-size: 13px;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        /* Подвал */
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 22px;
+            border-top: 1px solid var(--border);
+            color: #666874;
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            line-height: 1.8;
+            text-transform: uppercase;
+        }
+
+        .footer-mark {
+            color: var(--red);
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 22px 14px;
+            }
+
+            .page-header {
+                align-items: flex-start;
+                flex-direction: column;
+                margin-bottom: 26px;
+            }
+
+            .system-status {
+                align-self: flex-start;
+            }
+
+            .card {
+                padding: 20px 16px;
+                margin-bottom: 18px;
+            }
+
+            .card-title {
+                font-size: 22px;
+            }
+
+            .card-heading {
+                align-items: flex-start;
+            }
+
+            .chat-list {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 13px 12px;
+            }
+
+            .message-meta {
+                gap: 10px;
+            }
+
+            .message-time {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .footer {
+                flex-direction: column;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
         }
     </style>
 </head>
+
 <body>
-    <h1>Админ-панель</h1>
+    <main class="container">
 
-    <div class="card">
-        <h2>Пользователи</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Имя</th>
-                    <th>Online</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user._id }}</td>
-                    <td>{{ user.name }}</td>
-                    <td>{{ user.isActive }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="2">Пользователи не найдены</td>
-                </tr>
+        <div class="topline">Identity Protocol</div>
+
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">System management / 001</p>
+
+                <h1>Панель <span>управления.</span></h1>
+
+                <p class="header-description">
+                    Пользователи, чаты и сообщения системы.
+                </p>
+            </div>
+
+            <div class="system-status">
+                <span class="status-dot"></span>
+                System dashboard
+            </div>
+        </header>
+
+        <!-- Пользователи -->
+
+        <section class="card">
+            <div class="card-heading">
+                <h2 class="card-title">
+                    <span class="card-number">01 /</span>
+                    Пользователи
+                </h2>
+
+                <span class="card-count">
+                    {{ users|length }} USERS
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td class="user-id">{{ user._id }}</td>
+
+                            <td class="username">{{ user.name }}</td>
+
+                            <td>
+                                {% if user.isActive %}
+                                <span class="online-status online">
+                                    Online
+                                </span>
+                                {% else %}
+                                <span class="online-status offline">
+                                    Offline
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    Пользователи не найдены
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Чаты -->
+
+        <section class="card">
+            <div class="card-heading">
+                <h2 class="card-title">
+                    <span class="card-number">02 /</span>
+                    Чаты
+                </h2>
+
+                <span class="card-count">
+                    {{ chats|length }} CHATS
+                </span>
+            </div>
+
+            {% if chats %}
+            <div class="chat-list">
+                {% for chat in chats %}
+                <article class="chat-item">
+
+                    <div class="chat-header">
+                        <span>ID:</span> {{ chat.id }}
+                        <br>
+
+                        <span>Name:</span>
+                        <span class="chat-name">{{ chat.name }}</span>
+
+                        <br>
+
+                        <span>Type:</span>
+                        <span class="chat-type">
+                            {% if chat.is_group %}
+                                Group
+                            {% else %}
+                                Private
+                            {% endif %}
+                        </span>
+
+                        <br>
+
+                        <span>Creator ID:</span> {{ chat.creator_id }}
+                    </div>
+
+                    <p class="participants-title">
+                        Участники
+                        ({{ chat.participants|length }})
+                    </p>
+
+                    {% if chat.participants %}
+                    <ul class="participants">
+                        {% for name in chat.participants %}
+                        <li>{{ name }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="empty-state">
+                        Участники отсутствуют
+                    </div>
+                    {% endif %}
+
+                </article>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card">
-        <h2>Чаты</h2>
-        {% for chat in chats %}
-        <div class="chat-header">ID: {{ chat.id }} | Name: {{ chat.name }} | Group: {{ chat.is_group }} | Creator ID: {{ chat.creator_id }}</div>
-        <span>Участники:</span>
-        <ul>
-            {% for name in chat.participants %}
-                <li>{{ name }}</li>
-            {% endfor %}
-        </ul>
-
-        <hr>
-        {% endfor %}
-    </div>
-
-    <div class="card">
-        <h2>Сообщения</h2>
-        <ul class="message-list">
-            {% for msg in messages %}
-            <li>
-                <strong>Sender:</strong> {{ msg.sender }}<br>
-                <strong>Chat ID:</strong> {{ msg.chat_id }}<br>
-                <strong>Text:</strong> {{ msg.text }}<br>
-                <strong>Timestamp:</strong> {{ msg.timestamp }}<br>
-            </li>
+            </div>
             {% else %}
-            <li>Сообщений нет</li>
-            {% endfor %}
-        </ul>
-    </div>
+            <div class="empty-state">
+                Чаты не найдены
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Сообщения -->
+
+        <section class="card">
+            <div class="card-heading">
+                <h2 class="card-title">
+                    <span class="card-number">03 /</span>
+                    Сообщения
+                </h2>
+
+                <span class="card-count">
+                    {{ messages|length }} MESSAGES
+                </span>
+            </div>
+
+            {% if messages %}
+            <ul class="message-list">
+                {% for msg in messages %}
+                <li class="message-item">
+
+                    <div class="message-meta">
+                        <span class="message-sender">
+                            {{ msg.sender }}
+                        </span>
+
+                        <span class="message-chat">
+                            CHAT / {{ msg.chat_id }}
+                        </span>
+
+                        <span class="message-time">
+                            {{ msg.timestamp }}
+                        </span>
+                    </div>
+
+                    <p class="message-label">Текст сообщения</p>
+
+                    <p class="message-text">{{ msg.text }}</p>
+
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                Сообщений нет
+            </div>
+            {% endif %}
+        </section>
+
+        <footer class="footer">
+            <span>Ваш доступ. Ваши правила.</span>
+            <span class="footer-mark">System / Secure</span>
+        </footer>
+
+    </main>
 </body>
 </html>

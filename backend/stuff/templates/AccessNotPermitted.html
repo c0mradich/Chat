@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>403 — Ты куда?</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            overflow: hidden;
+            background: #0b0d12;
+            color: #f1f5f9;
+            font-family: Consolas, "Courier New", monospace;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(#ffffff08 1px, transparent 1px),
+                linear-gradient(90deg, #ffffff08 1px, transparent 1px);
+            background-size: 35px 35px;
+            pointer-events: none;
+        }
+
+        .card {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            padding: 45px 35px;
+            text-align: center;
+            background: #12151d;
+            border: 1px solid #303541;
+            border-radius: 20px;
+            box-shadow: 0 0 80px #ff334410;
+            animation: appear 0.5s ease-out;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 13px;
+            margin-bottom: 20px;
+            color: #ff6565;
+            background: #ff444415;
+            border: 1px solid #ff555540;
+            border-radius: 7px;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+
+        .error-code {
+            color: #ff4d5e;
+            font-size: clamp(90px, 20vw, 155px);
+            font-weight: 900;
+            line-height: 1;
+            text-shadow: 0 0 35px #ff334430;
+            animation: glitch 3s infinite;
+        }
+
+        h1 {
+            margin-top: 15px;
+            font-size: clamp(25px, 5vw, 38px);
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            margin-top: 14px;
+            color: #a0a8b8;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .guard {
+            margin: 28px 0 18px;
+            font-size: 68px;
+            animation: bob 2s ease-in-out infinite;
+        }
+
+        .terminal {
+            margin: 25px 0;
+            padding: 16px;
+            background: #090b10;
+            border: 1px solid #292e3a;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.9;
+            overflow-wrap: anywhere;
+        }
+
+        .terminal .red {
+            color: #ff6565;
+        }
+
+        .terminal .green {
+            color: #68e6a5;
+        }
+
+        .terminal .muted {
+            color: #6f788a;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 13px 22px;
+            border: 1px solid #424958;
+            border-radius: 9px;
+            color: #f1f5f9;
+            background: #202531;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.2s ease;
+        }
+
+        .back:hover {
+            background: #303747;
+            border-color: #ff6565;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 25px;
+            color: #525b6b;
+            font-size: 11px;
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-7px); }
+        }
+
+        @keyframes glitch {
+            0%, 94%, 100% { transform: translateX(0); }
+            95% { transform: translateX(-3px); }
+            97% { transform: translateX(3px); }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 35px 20px;
+            }
+
+            .terminal {
+                font-size: 11px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="card">
+        <div class="status">● ACCESS DENIED</div>
+
+        <div class="error-code">403</div>
+
+        <h1>ЭЭЭ, ТЫ КУДА? 💀</h1>
+
+        <p class="subtitle">
+            Брат, ты зашёл на территорию админов.<br>
+            Тебя сюда не звали.
+        </p>
+
+        <div class="guard">🗿🔒</div>
+
+        <div class="terminal">
+            <div class="muted">root@admin-panel:~$ check_permissions</div>
+            <div class="green">[INFO] Проверка пользователя...</div>
+            <div class="red">[DENIED] Прав недостаточно.</div>
+            <div class="red">[ERROR] Кто тебя вообще сюда пустил?</div>
+            <div class="muted">root@admin-panel:~$ _</div>
+        </div>
+
+        <a class="back" href="/">← Всё, я пошёл назад</a>
+
+        <div class="footer">
+            HTTP 403 · ACCESS DENIED · НЕ ТВОЯ ТЕРРИТОРИЯ
+        </div>
+    </main>
+</body>
+</html>

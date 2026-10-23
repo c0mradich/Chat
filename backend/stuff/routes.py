@@ -1,3 +1,5 @@
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app, url_for
 from flask import request, jsonify, session, render_template
 from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
@@ -5,14 +7,31 @@ from Python_Utils.utils import find_chat, create_chat
 from Python_Utils.mime import get_mime_type_from_extension
 from Python_Utils.func import generate_file_hash4
 import base64, os
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
 from datetime import datetime
+
+ph = PasswordHasher()
+
+Su_name = os.environ.get("SU_NAME")
+Su_password = os.environ.get("SU_PASSWORD")
+
+if not Su_name or not Su_password:
+    Su_name = "root"
+    Su_password = "root"
+
+SU_name_hashed = ph.hash(Su_name)
+SU_password_hashed = ph.hash(Su_password)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 UPLOAD_AVATARS_DIR = os.path.join(BASE_DIR, 'avatars')
 
+def generate_verification_token(user_id):
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return serializer.dumps(user_id, salt='email-verification')
 
 def register_routes(app, socketio):
     @app.route('/')
@@ -217,21 +236,61 @@ def register_routes(app, socketio):
         db.session.commit()
         return jsonify({"message": f"User {name} marked as inactive"}), 200
 
-    @app.route('/admin')
+    @app.route('/admin/login')
+    def adminLogin():
+        return render_template("Verification.html")
 
+    @app.route("/loginAdmin", methods=["POST"])
+    def loginAdmin():
+        data = request.get_json(silent=True) or {}
+
+        username = data.get("username")
+        password = data.get("password")
+
+        if not isinstance(username, str) or not isinstance(password, str) \
+                or not username.strip() or not password:
+            return jsonify({
+                "success": False,
+                "message": "Missing credentials"
+            }), 400
+
+        try:
+            ph.verify(SU_name_hashed, username.strip())
+            ph.verify(SU_password_hashed, password)
+
+        except VerifyMismatchError:
+            session["admin_authenticated"] = False
+            return jsonify({
+                "success": False,
+                "message": "Wrong credentials"
+            }), 401
+
+        except VerificationError:
+            app.logger.exception("Credential verification failed")
+            session["admin_authenticated"] = False
+            return jsonify({
+                "success": False,
+                "message": "Internal server error"
+            }), 500
+
+        session["admin_authenticated"] = True
+
+        return jsonify({
+            "success": True,
+            "redirect_url": "/admin"
+        }), 200
+
+
+    @app.route('/admin')
     def admin():
+        access = session.get("admin_authenticated", False)
+        if not access:
+            return render_template("AccessNotPermitted.html")
+        
         users_list = User.query.all()
         message_list = Message.query.all()
         chats_raw = Chat.query.all()
 
-        # ChatParticipant.query.delete()
-        # Message.query.delete()
-        # Chat.query.delete()
-        # User.query.delete()
-        # db.session.commit()
-        #session.clear()
-        #r.flushdb()
-        
         chats = []
         for chat in chats_raw:
             participant_names = []

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#08090c">
+    <title>Авторизация</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #08090c;
+            --surface: #101116;
+            --text: #eeedf0;
+            --muted: #898b98;
+            --red: #ff3548;
+            --red-dark: #8f1726;
+            --border: rgba(255, 255, 255, 0.09);
+        }
+
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+            overflow-x: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(
+                    ellipse at 12% 45%,
+                    rgba(255, 30, 55, 0.12),
+                    transparent 38%
+                ),
+                radial-gradient(
+                    ellipse at 85% 15%,
+                    rgba(35, 90, 130, 0.10),
+                    transparent 35%
+                );
+        }
+
+        .auth {
+            position: relative;
+            width: 100%;
+            max-width: 460px;
+            padding: 46px 40px 32px;
+            background: linear-gradient(
+                145deg,
+                rgba(23, 24, 31, 0.97),
+                rgba(10, 11, 15, 0.98)
+            );
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-shadow:
+                0 30px 100px rgba(0, 0, 0, 0.6),
+                0 0 60px rgba(255, 40, 60, 0.045);
+            overflow: hidden;
+            animation: appear 0.6s ease-out both;
+        }
+
+        .auth::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                var(--red),
+                #ff8993,
+                transparent
+            );
+            box-shadow: 0 0 20px rgba(255, 53, 72, 0.6);
+        }
+
+        .topline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 42px;
+            color: var(--red);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .topline::before {
+            content: "";
+            width: 26px;
+            height: 1px;
+            background: var(--red);
+            box-shadow: 0 0 8px var(--red);
+        }
+
+        .topline::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .eyebrow {
+            margin-bottom: 12px;
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin-bottom: 14px;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(36px, 7vw, 46px);
+            font-weight: 400;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+        }
+
+        h1 span {
+            color: var(--red);
+        }
+
+        .description {
+            margin-bottom: 32px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .field {
+            margin-bottom: 22px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 10px;
+            color: #c8c8d1;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .field input {
+            width: 100%;
+            height: 52px;
+            padding: 0 15px;
+            outline: none;
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 2px;
+            color: var(--text);
+            font: inherit;
+            font-size: 14px;
+            transition:
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+        }
+
+        .field input::placeholder {
+            color: #60616c;
+        }
+
+        .field input:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .field input:focus {
+            background: rgba(255, 53, 72, 0.025);
+            border-color: rgba(255, 53, 72, 0.75);
+            box-shadow: 0 0 0 3px rgba(255, 53, 72, 0.08);
+        }
+
+        .password-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .password-heading label {
+            margin-bottom: 10px;
+        }
+
+        .forgot-link {
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 11px;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-link:hover {
+            color: var(--red);
+        }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 68px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 52px;
+            padding: 0 14px;
+            color: var(--muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font: inherit;
+            font-size: 11px;
+        }
+
+        .toggle-password:hover {
+            color: var(--text);
+        }
+
+        .error {
+            display: none;
+            margin: -5px 0 18px;
+            padding: 11px 12px;
+            color: #ff8993;
+            background: rgba(255, 53, 72, 0.06);
+            border: 1px solid rgba(255, 53, 72, 0.18);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .error.visible {
+            display: block;
+        }
+
+        .login-button {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            width: 100%;
+            min-height: 56px;
+            margin-top: 30px;
+            padding: 0 18px;
+            color: white;
+            background: var(--red-dark);
+            border: 1px solid var(--red);
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+            box-shadow: 0 0 24px rgba(255, 53, 72, 0.09);
+            transition:
+                background 0.25s ease,
+                box-shadow 0.25s ease,
+                transform 0.25s ease;
+        }
+
+        .login-button:hover {
+            background: #b51e32;
+            box-shadow:
+                0 0 30px rgba(255, 53, 72, 0.22),
+                inset 0 0 20px rgba(255, 100, 120, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:focus-visible,
+        .forgot-link:focus-visible,
+        .toggle-password:focus-visible {
+            outline: 2px solid #ff8993;
+            outline-offset: 4px;
+        }
+
+        .login-button:disabled {
+            cursor: wait;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .arrow {
+            font-size: 22px;
+            font-weight: 400;
+            transition: transform 0.25s ease;
+        }
+
+        .login-button:hover .arrow {
+            transform: translateX(5px);
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: #666874;
+            font-size: 9px;
+            letter-spacing: 1px;
+            line-height: 1.8;
+            text-transform: uppercase;
+        }
+
+        .footer-mark {
+            color: var(--red);
+            white-space: nowrap;
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px 12px;
+            }
+
+            .auth {
+                padding: 34px 24px 24px;
+            }
+
+            .topline {
+                margin-bottom: 34px;
+                letter-spacing: 2.5px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .description {
+                font-size: 12px;
+            }
+
+            .footer {
+                flex-direction: column;
+                margin-top: 28px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="auth">
+        <div class="topline">Identity Protocol</div>
+
+        <p class="eyebrow">Authentication / 001</p>
+
+        <h1>
+            С возвращением<span>.</span>
+        </h1>
+
+        <p class="description">
+            Войдите в свой аккаунт, чтобы продолжить работу
+            с системой.
+        </p>
+
+        <form id="login-form" action="/loginAdmin" method="POST">
+            <div class="field">
+                <label for="username">Логин</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Введите логин"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <div class="password-heading">
+                    <label for="password">Пароль</label>
+                    <a class="forgot-link" href="/forgot-password">
+                        Забыли пароль?
+                    </a>
+                </div>
+
+                <div class="password-wrap">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Введите пароль"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button
+                        class="toggle-password"
+                        type="button"
+                        id="toggle-password"
+                        aria-controls="password"
+                        aria-pressed="false"
+                    >
+                        Показать
+                    </button>
+                </div>
+            </div>
+
+            <div
+                class="error"
+                id="login-error"
+                role="alert"
+                aria-live="polite"
+            ></div>
+
+            <button class="login-button" type="submit" id="login-button">
+                <span>Войти в аккаунт</span>
+                <span class="arrow" aria-hidden="true">↗</span>
+            </button>
+        </form>
+
+        <footer class="footer">
+            <span>Ваш доступ. Ваши правила.</span>
+            <span class="footer-mark">System / Secure</span>
+        </footer>
+    </main>
+
+    <script>
+        const passwordInput = document.getElementById("password");
+        const togglePassword = document.getElementById("toggle-password");
+        const loginForm = document.getElementById("login-form");
+        const loginError = document.getElementById("login-error");
+        const loginButton = document.getElementById("login-button");
+
+        togglePassword.addEventListener("click", () => {
+            const isPassword = passwordInput.type === "password";
+
+            passwordInput.type = isPassword ? "text" : "password";
+            togglePassword.textContent = isPassword ? "Скрыть" : "Показать";
+            togglePassword.setAttribute("aria-pressed", String(isPassword));
+        });
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            loginError.classList.remove("visible");
+            loginError.textContent = "";
+
+            loginButton.disabled = true;
+            loginButton.querySelector("span").textContent = "Выполняется вход...";
+
+            try {
+                const response = await fetch(loginForm.action, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        username: document.getElementById("username").value.trim(),
+                        password: passwordInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message || "Не удалось войти. Проверьте данные."
+                    );
+                }
+
+                window.location.href = data.redirect_url || "/";
+            } catch (error) {
+                loginError.textContent =
+                    error.message || "Ошибка соединения с сервером.";
+
+                loginError.classList.add("visible");
+            } finally {
+                loginButton.disabled = false;
+                loginButton.querySelector("span").textContent =
+                    "Войти в аккаунт";
+            }
+        });
+    </script>
+</body>
+</html>
