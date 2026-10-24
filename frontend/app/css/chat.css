@@ -1234,3 +1234,30 @@ img{
     display: none;
   }
 }
+
+.incoming-call {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #202c33;
+  color: white;
+}
+
+.accept-call,
+.reject-call {
+  border: none;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+}
+
+.accept-call {
+  background: #2eae65;
+}
+
+.reject-call {
+  background: #e34b4b;
+}

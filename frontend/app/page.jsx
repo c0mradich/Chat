@@ -63,7 +63,18 @@ const {
 
   useEffect(()=>{if(name&&socketConnected)fetchUsers(name,requestUserList);},[name,socketConnected]);
 
-  const{startCall,endCall,callStream,inCall}=useCall(wsSocket,chatId,name);
+const {
+  startCall,
+  endCall,
+  inCall,
+  callStatus,
+  incomingCall,
+  answerCall,
+  rejectCall,
+  callStream,
+  localStream,
+  callError
+} = useCall(wsSocket, chatId, name, currentChatInfo?.name);
 
   useEffect(()=>{redirect(setName);},[]);
 
@@ -115,7 +126,7 @@ const {
 
       {currentChat&&(
         <div className={`chat-area ${sideBarOpen && 'inactive'}`}>
-          <ChatHeader currentChatInfo={currentChatInfo}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}/>
+          <ChatHeader currentChatInfo={currentChatInfo}setSideBarOpen={setSideBarOpen}sideBarOpen={sideBarOpen}startCall={startCall}endCall={endCall}inCall={inCall}callStatus={callStatus}incomingCall={incomingCall}answerCall={answerCall}rejectCall={rejectCall}/>
           <Messages ref={messagesWindow}messages={messages}name={name}
             handleSendMessage={wsSendMessage}setNewMessage={setNewMessage}
             setEditingMsgId={setEditingMsgId}/>

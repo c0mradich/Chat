@@ -39,45 +39,79 @@ export function leave(name) {
   });
 }
 
-export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startCall, endCall, inCall}){
-  console.log(currentChatInfo)
+export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startCall, endCall, inCall, callStatus, incomingCall, answerCall, rejectCall}){
     return(
-        <div className="chat-header">
-          <div className="ChatHeaderInfo">
-          <button
-            type="button"
-            onClick={() => setSideBarOpen(!sideBarOpen)}
-            className="hamburger"
-            aria-label={sideBarOpen ? "Закрыть список чатов" : "Открыть список чатов"}
+    <div className="chat-header">
+      <div className="ChatHeaderInfo">
+        <button
+          type="button"
+          onClick={() => setSideBarOpen(!sideBarOpen)}
+          className="hamburger"
+          aria-label={sideBarOpen ? "Закрыть список чатов" : "Открыть список чатов"}
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+
+        {currentChatInfo.avatar ? (
+          <img
+            src={`${apiURL}/${currentChatInfo.avatar}`}
+            alt=""
+            className="avatar"
+          />
+        ) : (
+          <span className="avatar" aria-hidden="true">
+            {currentChatInfo.name.trim().charAt(0).toUpperCase() || "?"}
+          </span>
+        )}
+
+        <span className="UserHeaderInfo">
+          {currentChatInfo.name || "Select a user"}
+        </span>
+      </div>
+
+      {incomingCall && (
+        <div className="incoming-call">
+          <span>Входящий звонок: {incomingCall.peerName}</span>
+
+          <button
+            className="accept-call"
+            onClick={answerCall}
+          >
+            Принять
           </button>
-          {currentChatInfo.avatar ? (
-            <img
-                src={`${apiURL}/${currentChatInfo.avatar}`}
-                alt=""
-                className="avatar"
-              />
-            ) : (
-              <span className="avatar" aria-hidden="true">
-                {currentChatInfo.name.trim().charAt(0).toUpperCase() || "?"}
-              </span>
-            )}
-            <span className="UserHeaderInfo">{currentChatInfo.name || "Select a user"}</span>
-          </div>
-            <button className="call-btn" onClick={inCall ? endCall : startCall}>{inCall ? '🔴' : '📞'}</button>
+
+          <button
+            className="reject-call"
+            onClick={rejectCall}
+          >
+            Отклонить
+          </button>
         </div>
+      )}
+
+      <button
+        className="call-btn"
+        onClick={callStatus === 'idle' ? startCall : endCall}
+        disabled={
+          callStatus === 'ringing' ||
+          callStatus === 'connecting' ||
+          callStatus === 'disconnected'
+        }
+      >
+        {callStatus === 'idle' ? '📞' : '🔴'}
+      </button>
+    </div>
     )
 }

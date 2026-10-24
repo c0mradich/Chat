@@ -1,18 +1,212 @@
-import { useEffect, useRef, useState } from 'react';
 
-export function useCall(socket, chatId, name) {
+import { useEffect, useRef, useState, useCallback } from 'react';
+
+const DEBUG_CALLS = true;
+
+export function useCall(socket, chatId, name, peerName) {
+  // ==========================================
+  // REFS
+  // ==========================================
+
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
 
-  const [callStream, setCallStream] = useState(null);
-  const [inCall, setInCall] = useState(false);
   const pendingIceCandidatesRef = useRef([]);
+  const currentCallRef = useRef(null);
+  const incomingOfferRef = useRef(null);
 
-  // --------------------------------
-  // Создание WebRTC соединения
-  // --------------------------------
-  const createPeerConnection = () => {
-    const peerConnection = new RTCPeerConnection({
+  // ==========================================
+  // STATE
+  // ==========================================
+
+  const [callStream, setCallStream] = useState(null);
+  const [localStream, setLocalStream] = useState(null);
+
+  const [inCall, setInCall] = useState(false);
+  const [callStatus, setCallStatus] = useState('idle');
+
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callError, setCallError] = useState(null);
+
+  // ==========================================
+  // DEBUG
+  // ==========================================
+
+  const debug = (event, data = null) => {
+    if (!DEBUG_CALLS) return;
+
+    const prefix = `[CALL][${name || 'UNKNOWN'}]`;
+
+    if (data !== null) {
+      console.log(prefix, event, data);
+    } else {
+      console.log(prefix, event);
+    }
+  };
+
+  const debugError = (event, error) => {
+    console.error(`[CALL][${name || 'UNKNOWN'}] ${event}`, error);
+  };
+
+  // ==========================================
+  // SIGNALING
+  // ==========================================
+
+  const emitSignal = (event, payload) => {
+    debug(`OUTGOING → ${event}`, {
+      socketConnected: socket?.connected,
+      payload
+    });
+
+    if (!socket?.connected) {
+      debugError(`${event}: Socket disconnected`);
+      return false;
+    }
+
+    socket.emit(event, payload);
+    return true;
+  };
+
+  // ==========================================
+  // CURRENT CALL VALIDATION
+  // ==========================================
+
+  const isCurrentCall = useCallback((data) => {
+    const current = currentCallRef.current;
+
+    return Boolean(
+      current &&
+      data.call_id === current.call_id &&
+      data.chat_id === current.chat_id
+    );
+  }, []);
+
+  // ==========================================
+  // MICROPHONE
+  // ==========================================
+
+  const getMicrophone = async () => {
+    debug('Requesting microphone access');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+      });
+
+      debug('Microphone access granted', {
+        streamId: stream.id,
+        tracks: stream.getTracks().map(track => ({
+          kind: track.kind,
+          enabled: track.enabled,
+          readyState: track.readyState
+        }))
+      });
+
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+
+      return stream;
+
+    } catch (error) {
+      debugError('Microphone access failed', error);
+      throw error;
+    }
+  };
+
+  // ==========================================
+  // CLEANUP
+  // ==========================================
+
+  const cleanupCall = (resetError = true) => {
+    debug('CLEANUP CALL');
+
+    const pc = peerConnectionRef.current;
+
+    // Сначала инвалидируем старое соединение.
+    peerConnectionRef.current = null;
+
+    if (pc) {
+      pc.ontrack = null;
+      pc.onicecandidate = null;
+      pc.onconnectionstatechange = null;
+      pc.oniceconnectionstatechange = null;
+      pc.onicegatheringstatechange = null;
+      pc.onsignalingstatechange = null;
+
+      pc.close();
+    }
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+    }
+
+    localStreamRef.current = null;
+
+    pendingIceCandidatesRef.current = [];
+    currentCallRef.current = null;
+    incomingOfferRef.current = null;
+
+    setLocalStream(null);
+    setCallStream(null);
+    setIncomingCall(null);
+
+    setInCall(false);
+    setCallStatus('idle');
+
+    if (resetError) {
+      setCallError(null);
+    }
+  };
+
+  // ==========================================
+  // ICE CANDIDATES QUEUE
+  // ==========================================
+
+  const flushIceCandidates = async (pc) => {
+    if (!pc.remoteDescription) {
+      debug('Cannot flush ICE: remote description missing');
+      return;
+    }
+
+    debug('Flushing ICE candidates', {
+      count: pendingIceCandidatesRef.current.length
+    });
+
+    while (pendingIceCandidatesRef.current.length > 0) {
+      if (pc !== peerConnectionRef.current) return;
+
+      const candidate = pendingIceCandidatesRef.current.shift();
+
+      try {
+        await pc.addIceCandidate(
+          new RTCIceCandidate(candidate)
+        );
+
+        if (pc !== peerConnectionRef.current) return;
+
+        debug('Queued ICE candidate added');
+
+      } catch (error) {
+        debugError('Queued ICE candidate failed', error);
+      }
+    }
+  };
+
+  // ==========================================
+  // CREATE PEER CONNECTION
+  // ==========================================
+
+  const createPeerConnection = (call) => {
+    debug('Creating RTCPeerConnection', {
+      callId: call.call_id,
+      chatId: call.chat_id,
+      peerName: call.peerName
+    });
+
+    const pc = new RTCPeerConnection({
       iceServers: [
         {
           urls: 'stun:stun.l.google.com:19302'
@@ -20,374 +214,649 @@ export function useCall(socket, chatId, name) {
       ]
     });
 
-    // Получили аудио от собеседника
-    peerConnection.ontrack = (event) => {
-      console.log('[CALL] Remote track received');
+    peerConnectionRef.current = pc;
+
+    // ------------------------------------------
+    // REMOTE TRACK
+    // ------------------------------------------
+
+    pc.ontrack = (event) => {
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('REMOTE TRACK RECEIVED', {
+        streams: event.streams.map(stream => stream.id),
+        track: {
+          kind: event.track.kind,
+          enabled: event.track.enabled,
+          readyState: event.track.readyState
+        }
+      });
 
       const [remoteStream] = event.streams;
 
       if (remoteStream) {
-        console.log('[CALL] Remote stream received');
         setCallStream(remoteStream);
       }
     };
 
-    // Отправляем ICE-кандидата собеседнику
-    peerConnection.onicecandidate = (event) => {
-      if (!event.candidate) return;
+    // ------------------------------------------
+    // LOCAL ICE CANDIDATE
+    // ------------------------------------------
 
-      console.log('[CALL] Sending ICE candidate');
+    pc.onicecandidate = (event) => {
+      if (pc !== peerConnectionRef.current) return;
 
-      socket.emit('call_ice_candidate', {
-        chat_id: chatId,
+      if (!event.candidate) {
+        debug('ICE gathering finished');
+        return;
+      }
+
+      const candidate = event.candidate.toJSON();
+
+      debug('NEW LOCAL ICE CANDIDATE', {
+        candidate,
+        type: candidate.candidate?.match(/typ ([a-z]+)/)?.[1]
+      });
+
+      const current = currentCallRef.current;
+
+      if (!current) {
+        debug('ICE ignored: no active call');
+        return;
+      }
+
+      emitSignal('call_ice_candidate', {
+        call_id: current.call_id,
+        chat_id: current.chat_id,
         sender: name,
-        candidate: event.candidate
+        target: current.peerName,
+        candidate
       });
     };
 
-    // Для отладки состояния соединения
-    peerConnection.onconnectionstatechange = () => {
-      console.log(
-        '[CALL] Connection state:',
-        peerConnection.connectionState
-      );
+    // ------------------------------------------
+    // ICE GATHERING
+    // ------------------------------------------
+
+    pc.onicegatheringstatechange = () => {
+      debug('ICE gathering state:', pc.iceGatheringState);
     };
 
-    peerConnection.oniceconnectionstatechange = () => {
-      console.log(
-        '[CALL] ICE connection state:',
-        peerConnection.iceConnectionState
-      );
+    // ------------------------------------------
+    // ICE CONNECTION
+    // ------------------------------------------
+
+    pc.oniceconnectionstatechange = () => {
+      debug('ICE connection state:', pc.iceConnectionState);
     };
 
-    peerConnectionRef.current = peerConnection;
+    // ------------------------------------------
+    // SIGNALING
+    // ------------------------------------------
 
-    return peerConnection;
+    pc.onsignalingstatechange = () => {
+      debug('Signaling state:', pc.signalingState);
+    };
+
+    // ------------------------------------------
+    // CONNECTION
+    // ------------------------------------------
+
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+
+      debug('Connection state:', state);
+
+      if (pc !== peerConnectionRef.current) return;
+
+      if (state === 'connected') {
+        debug('CALL CONNECTED SUCCESSFULLY');
+
+        setCallStatus('connected');
+        setInCall(true);
+      }
+
+      if (state === 'connecting') {
+        setCallStatus('connecting');
+      }
+
+      if (state === 'disconnected') {
+        debug('Connection temporarily disconnected');
+        setCallStatus('disconnected');
+      }
+
+      if (state === 'failed') {
+        debugError('CONNECTION FAILED');
+
+        setCallError('Не удалось установить соединение');
+        cleanupCall(false);
+        return;
+      }
+
+      if (state === 'closed') {
+        setInCall(false);
+      }
+    };
+
+    return pc;
   };
 
-  // --------------------------------
-  // Начать звонок
-  // --------------------------------
+  // ==========================================
+  // START CALL
+  // ==========================================
+
   const startCall = async () => {
+    let callId = null;
+
     try {
-      if (!socket) {
-        console.error('[CALL] Socket is not connected');
+      debug('START CALL REQUESTED', {
+        socketConnected: socket?.connected,
+        chatId,
+        name,
+        peerName
+      });
+
+      if (!socket?.connected) {
+        throw new Error('Socket не подключён');
+      }
+
+      if (chatId == null || !name || !peerName) {
+        throw new Error('Отсутствует chatId, name или peerName');
+      }
+
+      if (currentCallRef.current) {
+        throw new Error('Звонок уже существует');
+      }
+
+      callId = crypto.randomUUID();
+
+      const call = {
+        call_id: callId,
+        chat_id: chatId,
+        role: 'caller',
+        peerName
+      };
+
+      currentCallRef.current = call;
+
+      setCallStatus('calling');
+      setCallError(null);
+
+      debug('Call initialized', call);
+
+      const stream = await getMicrophone();
+
+      if (currentCallRef.current?.call_id !== callId) {
+        debug('Call cancelled while waiting for microphone');
+
+        stream.getTracks().forEach(track => track.stop());
+
         return;
       }
 
-      if (!chatId) {
-        console.error('[CALL] chatId is missing');
-        return;
-      }
+      const pc = createPeerConnection(call);
 
-      console.log('[CALL] Starting call');
-
-      // Получаем микрофон
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
       });
 
-      console.log('[CALL] Microphone access granted');
+      debug('Creating offer');
 
-      localStreamRef.current = stream;
+      const offer = await pc.createOffer();
 
-      // Создаём WebRTC соединение
-      const peerConnection = createPeerConnection();
+      if (pc !== peerConnectionRef.current) return;
 
-      // Добавляем микрофон в WebRTC
-      stream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, stream);
+      debug('Offer created', {
+        type: offer.type,
+        sdpLength: offer.sdp?.length,
+        offer
       });
 
-      console.log('[CALL] Audio track added');
+      await pc.setLocalDescription(offer);
 
-      // Создаём offer
-      const offer = await peerConnection.createOffer();
+      if (pc !== peerConnectionRef.current) return;
 
-      console.log('[CALL] Offer created');
+      debug('Local description set');
 
-      // Устанавливаем собственное описание
-      await peerConnection.setLocalDescription(offer);
-
-      console.log('[CALL] Local description set');
-
-      // Отправляем offer через Socket.IO
-      socket.emit('call_offer', {
+      const sent = emitSignal('call_offer', {
+        call_id: callId,
         chat_id: chatId,
         sender: name,
-        offer: offer
+        target: peerName,
+        offer: pc.localDescription.toJSON()
       });
 
-      console.log('[CALL] Offer sent');
+      if (!sent) {
+        throw new Error('Не удалось отправить предложение звонка');
+      }
 
-      setInCall(true);
+      debug('OFFER SENT');
 
     } catch (error) {
-      console.error('[CALL] Error while starting call:', error);
+      debugError('START CALL FAILED', error);
+
+      setCallError(error.message);
+
+      if (
+        !callId ||
+        currentCallRef.current?.call_id === callId
+      ) {
+        cleanupCall(false);
+      }
     }
   };
 
-  // --------------------------------
-  // Ответить на звонок
-  // --------------------------------
-  const answerCall = async (offer) => {
+  // ==========================================
+  // RECEIVE INCOMING CALL
+  // ==========================================
+
+  const receiveCall = (data) => {
+    debug('INCOMING OFFER PROCESSING', data);
+
+    if (currentCallRef.current) {
+      debug('Incoming call rejected: already busy');
+
+      emitSignal('call_reject', {
+        call_id: data.call_id,
+        chat_id: data.chat_id,
+        sender: name,
+        target: data.sender,
+        reason: 'busy'
+      });
+
+      return;
+    }
+
+    const call = {
+      call_id: data.call_id,
+      chat_id: data.chat_id,
+      role: 'callee',
+      peerName: data.sender
+    };
+
+    currentCallRef.current = call;
+    incomingOfferRef.current = data.offer;
+
+    debug('Incoming call stored', call);
+
+    setIncomingCall({
+      call_id: data.call_id,
+      sender: data.sender,
+      chat_id: data.chat_id
+    });
+
+    setCallStatus('ringing');
+  };
+
+  // ==========================================
+  // ANSWER CALL
+  // ==========================================
+
+  const answerCall = async () => {
+    let callId = null;
+
     try {
-      if (!socket) {
-        console.error('[CALL] Socket is not connected');
+      const current = currentCallRef.current;
+      const offer = incomingOfferRef.current;
+
+      if (!current || !offer || current.role !== 'callee') {
+        throw new Error('Нет входящего звонка');
+      }
+
+      callId = current.call_id;
+
+      debug('ANSWERING CALL', current);
+
+      setCallStatus('connecting');
+
+      const stream = await getMicrophone();
+
+      if (currentCallRef.current?.call_id !== callId) {
+        debug('Answer cancelled while waiting for microphone');
+
+        stream.getTracks().forEach(track => track.stop());
+
         return;
       }
 
-      console.log('[CALL] Answering call');
+      const pc = createPeerConnection(current);
 
-      // Получаем микрофон
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
       });
 
-      console.log('[CALL] Microphone access granted');
+      debug('Setting remote offer');
 
-      localStreamRef.current = stream;
-
-      // Создаём WebRTC соединение
-      const peerConnection = createPeerConnection();
-
-      // Добавляем микрофон
-      stream.getTracks().forEach((track) => {
-        peerConnection.addTrack(track, stream);
-      });
-
-      console.log('[CALL] Audio track added');
-
-      // Устанавливаем offer собеседника
-      await peerConnection.setRemoteDescription(
+      await pc.setRemoteDescription(
         new RTCSessionDescription(offer)
       );
 
-      console.log('[CALL] Remote description set');
+      if (pc !== peerConnectionRef.current) return;
 
-      // Добавляем ICE-кандидаты, которые пришли слишком рано
-        for (const candidate of pendingIceCandidatesRef.current) {
-          try {
-            console.log('[CALL] Adding queued ICE candidate');
+      debug('Remote offer successfully set');
 
-            await peerConnection.addIceCandidate(
-              new RTCIceCandidate(candidate)
-            );
-          } catch (error) {
-            console.error(
-              '[CALL] Error adding queued ICE candidate:',
-              error
-            );
-          }
-        }
+      await flushIceCandidates(pc);
 
-        pendingIceCandidatesRef.current = [];
+      if (pc !== peerConnectionRef.current) return;
 
-      // Создаём answer
-      const answer = await peerConnection.createAnswer();
+      debug('Creating answer');
 
-      console.log('[CALL] Answer created');
+      const answer = await pc.createAnswer();
 
-      // Устанавливаем свой answer
-      await peerConnection.setLocalDescription(answer);
+      if (pc !== peerConnectionRef.current) return;
 
-      console.log('[CALL] Local description set');
-
-      // Отправляем answer
-      socket.emit('call_answer', {
-        chat_id: chatId,
-        sender: name,
-        answer: answer
+      debug('Answer created', {
+        type: answer.type,
+        sdpLength: answer.sdp?.length,
+        answer
       });
 
-      console.log('[CALL] Answer sent');
+      await pc.setLocalDescription(answer);
 
-      setInCall(true);
+      if (pc !== peerConnectionRef.current) return;
 
-    } catch (error) {
-      console.error('[CALL] Error while answering:', error);
-    }
-  };
+      debug('Local answer set');
 
-  // --------------------------------
-  // Получить answer
-  // --------------------------------
-  const handleAnswer = async (answer) => {
-    try {
-      if (!peerConnectionRef.current) {
-        console.error('[CALL] PeerConnection does not exist');
-        return;
+      const sent = emitSignal('call_answer', {
+        call_id: current.call_id,
+        chat_id: current.chat_id,
+        sender: name,
+        target: current.peerName,
+        answer: pc.localDescription.toJSON()
+      });
+
+      if (!sent) {
+        throw new Error('Не удалось отправить ответ на звонок');
       }
 
-      console.log('[CALL] Setting remote answer');
+      setIncomingCall(null);
 
-      await peerConnectionRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
-      );
-
-      console.log('[CALL] Remote answer set');
+      debug('ANSWER SENT');
 
     } catch (error) {
-      console.error('[CALL] Error while receiving answer:', error);
+      debugError('ANSWER FAILED', error);
+
+      setCallError(error.message);
+
+      if (
+        !callId ||
+        currentCallRef.current?.call_id === callId
+      ) {
+        cleanupCall(false);
+      }
     }
   };
 
-  // --------------------------------
-  // Получить ICE candidate
-  // --------------------------------
-  const handleIceCandidate = async (candidate) => {
-  try {
-    const peerConnection = peerConnectionRef.current;
+  // ==========================================
+  // REJECT CALL
+  // ==========================================
 
-    if (!peerConnection) {
-      console.log('[CALL] PeerConnection not ready, queueing ICE candidate');
+  const rejectCall = () => {
+    const current = currentCallRef.current;
 
-      pendingIceCandidatesRef.current.push(candidate);
-      return;
-    }
+    if (!current) return;
 
-    if (!peerConnection.remoteDescription) {
-      console.log('[CALL] Remote description not ready, queueing ICE candidate');
+    debug('REJECTING CALL', current);
 
-      pendingIceCandidatesRef.current.push(candidate);
-      return;
-    }
-
-    console.log('[CALL] Adding ICE candidate');
-
-    await peerConnection.addIceCandidate(
-      new RTCIceCandidate(candidate)
-    );
-
-  } catch (error) {
-    console.error('[CALL] Error while adding ICE candidate:', error);
-  }
-};
-
-  // --------------------------------
-  // Очистка звонка
-  // --------------------------------
-const cleanupCall = () => {
-  console.log('[CALL] Cleaning up call');
-
-  if (localStreamRef.current) {
-    localStreamRef.current
-      .getTracks()
-      .forEach((track) => track.stop());
-
-    localStreamRef.current = null;
-  }
-
-  if (peerConnectionRef.current) {
-    peerConnectionRef.current.close();
-    peerConnectionRef.current = null;
-  }
-
-  pendingIceCandidatesRef.current = [];
-
-  setCallStream(null);
-  setInCall(false);
-};
-
-  // --------------------------------
-  // Завершить звонок
-  // --------------------------------
-  const endCall = () => {
-    if (!socket) {
-      cleanupCall();
-      return;
-    }
-
-    console.log('[CALL] Ending call');
-
-    socket.emit('call_end', {
-      chat_id: chatId,
-      sender: name
+    emitSignal('call_reject', {
+      call_id: current.call_id,
+      chat_id: current.chat_id,
+      sender: name,
+      target: current.peerName,
+      reason: 'rejected'
     });
 
     cleanupCall();
   };
 
-  // --------------------------------
-  // Socket.IO события
-  // --------------------------------
-  useEffect(() => {
-    if (!socket) {
-      console.log('[CALL] Waiting for socket...');
+  // ==========================================
+  // HANDLE ANSWER
+  // ==========================================
+
+  const handleAnswer = async (data) => {
+    try {
+      debug('PROCESSING REMOTE ANSWER', data);
+
+      if (!isCurrentCall(data)) {
+        debug('Answer ignored: call_id/chat_id mismatch');
+        return;
+      }
+
+      const pc = peerConnectionRef.current;
+
+      if (!pc) {
+        debug('Answer ignored: PeerConnection missing');
+        return;
+      }
+
+      await pc.setRemoteDescription(
+        new RTCSessionDescription(data.answer)
+      );
+
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('REMOTE ANSWER SET');
+
+      await flushIceCandidates(pc);
+
+      if (pc !== peerConnectionRef.current) return;
+
+      setCallStatus('connecting');
+
+    } catch (error) {
+      debugError('ANSWER HANDLING FAILED', error);
+    }
+  };
+
+  // ==========================================
+  // HANDLE REMOTE ICE
+  // ==========================================
+
+  const handleIceCandidate = async (data) => {
+    debug('PROCESSING REMOTE ICE', data);
+
+    if (!isCurrentCall(data)) {
+      debug('ICE ignored: call_id/chat_id mismatch', {
+        received: {
+          call_id: data.call_id,
+          chat_id: data.chat_id
+        },
+        current: currentCallRef.current
+      });
+
       return;
     }
 
-    console.log('[CALL] Registering Socket.IO call listeners');
+    const pc = peerConnectionRef.current;
 
-    // Получили offer
-    const handleOffer = async (data) => {
-      if (data.sender === name) return;
+    if (!pc || !pc.remoteDescription) {
+      debug('ICE queued: remote description not ready');
 
-      console.log('[CALL] Offer received:', data);
+      pendingIceCandidatesRef.current.push(data.candidate);
 
-      await answerCall(data.offer);
-    };
+      return;
+    }
 
-    // Получили answer
-    const handleAnswerEvent = async (data) => {
-      if (data.sender === name) return;
-
-      console.log('[CALL] Answer received:', data);
-
-      await handleAnswer(data.answer);
-    };
-
-    // Получили ICE
-    const handleIceCandidateEvent = async (data) => {
-      if (data.sender === name) return;
-
-      console.log(
-        '[CALL] ICE candidate received:',
-        data.candidate
+    try {
+      await pc.addIceCandidate(
+        new RTCIceCandidate(data.candidate)
       );
 
-      await handleIceCandidate(data.candidate);
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('REMOTE ICE SUCCESSFULLY ADDED');
+
+    } catch (error) {
+      debugError('REMOTE ICE FAILED', error);
+    }
+  };
+
+  // ==========================================
+  // END CALL
+  // ==========================================
+
+  const endCall = () => {
+    const current = currentCallRef.current;
+
+    debug('END CALL REQUESTED', current);
+
+    if (current) {
+      emitSignal('call_end', {
+        call_id: current.call_id,
+        chat_id: current.chat_id,
+        sender: name,
+        target: current.peerName
+      });
+    }
+
+    cleanupCall();
+  };
+
+  // ==========================================
+  // SOCKET.IO LISTENERS
+  // ==========================================
+
+  useEffect(() => {
+    if (!socket) return;
+
+    debug('Registering Socket.IO listeners', {
+      chatId,
+      name,
+      socketConnected: socket.connected
+    });
+
+    // ------------------------------------------
+    // OFFER
+    // ------------------------------------------
+
+    const handleOfferEvent = (data) => {
+      debug('INCOMING ← call_offer', data);
+
+      if (data.sender === name) {
+        debug('Offer ignored: own event');
+        return;
+      }
+
+      if (data.target && data.target !== name) {
+        debug('Offer ignored: wrong target');
+        return;
+      }
+
+      if (data.chat_id !== chatId) {
+        debug('Offer ignored: wrong chat', {
+          received: data.chat_id,
+          expected: chatId
+        });
+        return;
+      }
+
+      receiveCall(data);
     };
 
-    // Собеседник завершил звонок
-    const handleCallEnd = (data) => {
+    // ------------------------------------------
+    // ANSWER
+    // ------------------------------------------
+
+    const handleAnswerEvent = (data) => {
+      debug('INCOMING ← call_answer', data);
+
       if (data.sender === name) return;
 
-      console.log('[CALL] Call ended by other user');
+      if (data.target && data.target !== name) return;
+
+      handleAnswer(data);
+    };
+
+    // ------------------------------------------
+    // ICE
+    // ------------------------------------------
+
+    const handleIceEvent = (data) => {
+      debug('INCOMING ← call_ice_candidate', data);
+
+      if (data.sender === name) return;
+
+      if (data.target && data.target !== name) return;
+
+      handleIceCandidate(data);
+    };
+
+    // ------------------------------------------
+    // END
+    // ------------------------------------------
+
+    const handleEndEvent = (data) => {
+      debug('INCOMING ← call_end', data);
+
+      if (data.sender === name) return;
+
+      if (data.target && data.target !== name) return;
+
+      if (!isCurrentCall(data)) return;
+
+      debug('REMOTE CLIENT ENDED CALL');
 
       cleanupCall();
     };
 
-    socket.on('call_offer', handleOffer);
-    socket.on('call_answer', handleAnswerEvent);
-    socket.on(
-      'call_ice_candidate',
-      handleIceCandidateEvent
-    );
-    socket.on('call_end', handleCallEnd);
+    // ------------------------------------------
+    // REJECT
+    // ------------------------------------------
 
-    return () => {
-      console.log('[CALL] Removing Socket.IO call listeners');
+    const handleRejectEvent = (data) => {
+      debug('INCOMING ← call_reject', data);
 
-      socket.off('call_offer', handleOffer);
-      socket.off('call_answer', handleAnswerEvent);
-      socket.off(
-        'call_ice_candidate',
-        handleIceCandidateEvent
+      if (data.sender === name) return;
+
+      if (data.target && data.target !== name) return;
+
+      if (!isCurrentCall(data)) return;
+
+      debug('REMOTE CLIENT REJECTED CALL', data.reason);
+
+      setCallError(
+        data.reason === 'busy'
+          ? 'Пользователь занят'
+          : 'Звонок отклонён'
       );
-      socket.off('call_end', handleCallEnd);
+
+      cleanupCall(false);
     };
 
-  }, [socket, chatId, name]);
+    socket.on('call_offer', handleOfferEvent);
+    socket.on('call_answer', handleAnswerEvent);
+    socket.on('call_ice_candidate', handleIceEvent);
+    socket.on('call_end', handleEndEvent);
+    socket.on('call_reject', handleRejectEvent);
 
-  // --------------------------------
-  // Возвращаем функции
-  // --------------------------------
+    return () => {
+      debug('Removing Socket.IO listeners');
+
+      socket.off('call_offer', handleOfferEvent);
+      socket.off('call_answer', handleAnswerEvent);
+      socket.off('call_ice_candidate', handleIceEvent);
+      socket.off('call_end', handleEndEvent);
+      socket.off('call_reject', handleRejectEvent);
+    };
+
+  }, [socket, chatId, name, isCurrentCall]);
+
+  // ==========================================
+  // RETURN
+  // ==========================================
+
   return {
     startCall,
     answerCall,
+    rejectCall,
     endCall,
+
     callStream,
-    inCall
+    localStream,
+
+    inCall,
+    callStatus,
+    incomingCall,
+    callError
   };
 }

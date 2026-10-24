@@ -436,120 +436,83 @@ def register_socket_handlers(socketio):
     # WEBRTC CALL SIGNALING
     # ==========================================
 
-    @socketio.on("call_offer")
+    @socketio.on('call_offer')
     def handle_call_offer(data):
-        try:
-            chat_id = data.get("chat_id")
-            sender = data.get("sender")
-            offer = data.get("offer")
+        target = data.get('target')
 
-            if not chat_id or not sender or not offer:
-                print("❌ call_offer: missing data")
-                return
+        if not target:
+            print('[CALL SERVER] Missing target')
+            return
 
-            print(
-                f"📞 CALL OFFER: {sender} -> chat {chat_id}"
-            )
+        target_sid = r.get(target)
 
-            # Отправляем offer всем в комнате,
-            # кроме того, кто его отправил
-            emit(
-                "call_offer",
-                {
-                    "sender": sender,
-                    "offer": offer
-                },
-                room=chat_id,
-                include_self=False
-            )
+        if not target_sid:
+            print(f'[CALL SERVER] User {target} is offline')
+            return
 
-        except Exception as e:
-            print(f"❌ Ошибка call_offer: {e}")
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode()
+
+        print(f"[CALL SERVER] OFFER: {data.get('sender')} -> {target}")
+
+        socketio.emit('call_offer', data, to=target_sid)
 
 
-    @socketio.on("call_answer")
+    @socketio.on('call_answer')
     def handle_call_answer(data):
-        try:
-            chat_id = data.get("chat_id")
-            sender = data.get("sender")
-            answer = data.get("answer")
+        target = data.get('target')
 
-            if not chat_id or not sender or not answer:
-                print("❌ call_answer: missing data")
-                return
+        print("\n========== CALL ANSWER ==========")
+        print("Sender:", data.get('sender'))
+        print("Target:", target)
+        print("Call ID:", data.get('call_id'))
 
-            print(
-                f"📞 CALL ANSWER: {sender} -> chat {chat_id}"
-            )
+        target_sid = r.get(target)
 
-            emit(
-                "call_answer",
-                {
-                    "sender": sender,
-                    "answer": answer
-                },
-                room=chat_id,
-                include_self=False
-            )
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode('utf-8')
 
-        except Exception as e:
-            print(f"❌ Ошибка call_answer: {e}")
+        print("Target SID:", target_sid)
+
+        if not target_sid:
+            print("ERROR: Target SID not found!")
+            return
+
+        socketio.emit('call_answer', data, to=target_sid)
+        print("ANSWER EMITTED")
+        print("=================================\n")
 
 
-    @socketio.on("call_ice_candidate")
-    def handle_call_ice_candidate(data):
-        try:
-            chat_id = data.get("chat_id")
-            sender = data.get("sender")
-            candidate = data.get("candidate")
+    @socketio.on('call_ice_candidate')
+    def handle_call_ice(data):
+        target = data.get('target')
+        target_sid = r.get(target)
 
-            if not chat_id or not sender or not candidate:
-                print("❌ call_ice_candidate: missing data")
-                return
+        if not target_sid:
+            return
 
-            emit(
-                "call_ice_candidate",
-                {
-                    "sender": sender,
-                    "candidate": candidate
-                },
-                room=chat_id,
-                include_self=False
-            )
-
-        except Exception as e:
-            print(
-                f"❌ Ошибка call_ice_candidate: {e}"
-            )
+        emit('call_ice_candidate', data, to=target_sid)
 
 
-    @socketio.on("call_end")
+    @socketio.on('call_end')
     def handle_call_end(data):
-        try:
-            chat_id = data.get("chat_id")
-            sender = data.get("sender")
+        target = data.get('target')
+        target_sid = r.get(target)
 
-            if not chat_id or not sender:
-                print("❌ call_end: missing data")
-                return
-
-            print(
-                f"📞 CALL END: {sender} -> chat {chat_id}"
-            )
-
-            emit(
-                "call_end",
-                {
-                    "sender": sender
-                },
-                room=chat_id,
-                include_self=False
-            )
-
-        except Exception as e:
-            print(f"❌ Ошибка call_end: {e}")
+        if target_sid:
+            emit('call_end', data, to=target_sid)
 
 
+    @socketio.on('call_reject')
+    def handle_call_reject(data):
+        target = data.get('target')
+        target_sid = r.get(target)
+
+        if target_sid:
+            emit('call_reject', data, to=target_sid)
+
+
+    #DEBUG
     @socketio.on('test_ack')
     def test_ack(data):
         print("TEST ACK RECEIVED:", data)
