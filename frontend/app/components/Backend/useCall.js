@@ -96,10 +96,32 @@ export function useCall(socket, chatId, name, peerName) {
     debug('Requesting microphone access');
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-      });
+      
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: {
+        ideal: true
+      },
+
+      noiseSuppression: {
+        ideal: true
+      },
+
+      autoGainControl: {
+        ideal: true
+      },
+
+      channelCount: {
+        ideal: 1
+      },
+
+      sampleRate: {
+        ideal: 48000
+      }
+    },
+
+    video: false
+  });
 
       debug('Microphone access granted', {
         streamId: stream.id,
