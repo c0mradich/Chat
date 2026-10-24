@@ -486,18 +486,38 @@ def register_socket_handlers(socketio):
     @socketio.on('call_ice_candidate')
     def handle_call_ice(data):
         target = data.get('target')
-        target_sid = r.get(target)
 
-        if not target_sid:
+        if not target:
+            print('[ICE] ERROR: target is missing')
             return
 
-        emit('call_ice_candidate', data, to=target_sid)
+        target_sid = r.get(target)
+
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode('utf-8')
+
+        print('\n========== ICE CANDIDATE ==========')
+        print('Sender:', data.get('sender'))
+        print('Target:', target)
+        print('Target SID:', target_sid)
+        print('Candidate:', data.get('candidate'))
+
+        if not target_sid:
+            print(f'[ICE] ERROR: {target} not found in Redis')
+            return
+
+        socketio.emit('call_ice_candidate', data, to=target_sid)
+
+        print('[ICE] FORWARDED SUCCESSFULLY')
+        print('===================================\n')
 
 
     @socketio.on('call_end')
     def handle_call_end(data):
         target = data.get('target')
         target_sid = r.get(target)
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode('utf-8')
 
         if target_sid:
             emit('call_end', data, to=target_sid)
@@ -507,6 +527,9 @@ def register_socket_handlers(socketio):
     def handle_call_reject(data):
         target = data.get('target')
         target_sid = r.get(target)
+
+        if isinstance(target_sid, bytes):
+            target_sid = target_sid.decode('utf-8')
 
         if target_sid:
             emit('call_reject', data, to=target_sid)

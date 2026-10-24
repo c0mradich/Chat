@@ -45,7 +45,10 @@ export function useCall(socket, chatId, name, peerName) {
   };
 
   const debugError = (event, error) => {
-    console.error(`[CALL][${name || 'UNKNOWN'}] ${event}`, error);
+    console.error(
+      `[CALL][${name || 'UNKNOWN'}] ${event}`,
+      error
+    );
   };
 
   // ==========================================
@@ -55,7 +58,10 @@ export function useCall(socket, chatId, name, peerName) {
   const emitSignal = (event, payload) => {
     debug(`OUTGOING → ${event}`, {
       socketConnected: socket?.connected,
-      payload
+      callId: payload.call_id,
+      chatId: payload.chat_id,
+      sender: payload.sender,
+      target: payload.target
     });
 
     if (!socket?.connected) {
@@ -64,6 +70,7 @@ export function useCall(socket, chatId, name, peerName) {
     }
 
     socket.emit(event, payload);
+
     return true;
   };
 
@@ -115,6 +122,114 @@ export function useCall(socket, chatId, name, peerName) {
   };
 
   // ==========================================
+  // ICE STATS
+  // ==========================================
+
+  const logSelectedIcePair = async (pc) => {
+    if (!pc || pc !== peerConnectionRef.current) return;
+
+    try {
+      const stats = await pc.getStats();
+
+      let selectedPair = null;
+
+      // Сначала пробуем найти выбранную пару через transport.
+      stats.forEach(report => {
+        if (
+          report.type === 'transport' &&
+          report.selectedCandidatePairId
+        ) {
+          const pair = stats.get(
+            report.selectedCandidatePairId
+          );
+
+          if (pair) {
+            selectedPair = pair;
+          }
+        }
+      });
+
+      // Запасной способ поиска выбранной пары.
+      if (!selectedPair) {
+        stats.forEach(report => {
+          if (
+            report.type === 'candidate-pair' &&
+            report.state === 'succeeded' &&
+            (report.selected || report.nominated)
+          ) {
+            selectedPair = report;
+          }
+        });
+      }
+
+      if (!selectedPair) {
+        debug('NO SELECTED ICE PAIR', {
+          iceState: pc.iceConnectionState,
+          connectionState: pc.connectionState
+        });
+
+        return;
+      }
+
+      const local = stats.get(
+        selectedPair.localCandidateId
+      );
+
+      const remote = stats.get(
+        selectedPair.remoteCandidateId
+      );
+
+      debug('SELECTED ICE PAIR', {
+        state: selectedPair.state,
+
+        localType: local?.candidateType || 'unknown',
+        remoteType: remote?.candidateType || 'unknown',
+
+        localProtocol: local?.protocol || 'unknown',
+        remoteProtocol: remote?.protocol || 'unknown',
+
+        bytesSent: selectedPair.bytesSent,
+        bytesReceived: selectedPair.bytesReceived
+      });
+
+    } catch (error) {
+      debugError('ICE STATS FAILED', error);
+    }
+  };
+
+  // ==========================================
+  // LOCAL ICE SUMMARY
+  // ==========================================
+
+  const logLocalIceSummary = (pc) => {
+    if (!pc || pc !== peerConnectionRef.current) return;
+
+    const sdp = pc.localDescription?.sdp || '';
+
+    const candidateLines = sdp
+      .split(/\r?\n/)
+      .filter(line => line.startsWith('a=candidate:'));
+
+    debug('LOCAL SDP CANDIDATE SUMMARY', {
+      candidateCount: candidateLines.length,
+
+      hasHost: candidateLines.some(
+        line => line.includes(' typ host')
+      ),
+
+      hasSrflx: candidateLines.some(
+        line => line.includes(' typ srflx')
+      ),
+
+      hasRelay: candidateLines.some(
+        line => line.includes(' typ relay')
+      ),
+
+      gatheringState: pc.iceGatheringState
+    });
+  };
+
+  // ==========================================
   // CLEANUP
   // ==========================================
 
@@ -123,7 +238,7 @@ export function useCall(socket, chatId, name, peerName) {
 
     const pc = peerConnectionRef.current;
 
-    // Сначала инвалидируем старое соединение.
+    // Инвалидируем старое соединение.
     peerConnectionRef.current = null;
 
     if (pc) {
@@ -138,9 +253,9 @@ export function useCall(socket, chatId, name, peerName) {
     }
 
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
+      localStreamRef.current
+        .getTracks()
+        .forEach(track => track.stop());
     }
 
     localStreamRef.current = null;
@@ -171,23 +286,32 @@ export function useCall(socket, chatId, name, peerName) {
       return;
     }
 
+    if (pc !== peerConnectionRef.current) return;
+
+    const current = currentCallRef.current;
+
+    const candidates = pendingIceCandidatesRef.current.filter(
+      item => item.call_id === current?.call_id
+    );
+
+    pendingIceCandidatesRef.current = [];
+
     debug('Flushing ICE candidates', {
-      count: pendingIceCandidatesRef.current.length
+      count: candidates.length
     });
 
-    while (pendingIceCandidatesRef.current.length > 0) {
+    for (const item of candidates) {
       if (pc !== peerConnectionRef.current) return;
-
-      const candidate = pendingIceCandidatesRef.current.shift();
 
       try {
         await pc.addIceCandidate(
-          new RTCIceCandidate(candidate)
+          new RTCIceCandidate(item.candidate)
         );
 
-        if (pc !== peerConnectionRef.current) return;
-
-        debug('Queued ICE candidate added');
+        debug('Queued ICE candidate added', {
+          type: item.candidate.candidate
+            ?.match(/ typ ([a-z]+)/)?.[1] || 'unknown'
+        });
 
       } catch (error) {
         debugError('Queued ICE candidate failed', error);
@@ -212,6 +336,17 @@ export function useCall(socket, chatId, name, peerName) {
           urls: 'stun:stun.l.google.com:19302'
         }
       ]
+    });
+
+        debug('INITIAL PEER CONNECTION CONFIG', {
+      iceGatheringState: pc.iceGatheringState,
+      iceConnectionState: pc.iceConnectionState,
+      signalingState: pc.signalingState,
+      transceivers: pc.getTransceivers().map(t => ({
+        mid: t.mid,
+        direction: t.direction,
+        currentDirection: t.currentDirection
+      }))
     });
 
     peerConnectionRef.current = pc;
@@ -247,15 +382,24 @@ export function useCall(socket, chatId, name, peerName) {
       if (pc !== peerConnectionRef.current) return;
 
       if (!event.candidate) {
-        debug('ICE gathering finished');
+        debug('ICE GATHERING COMPLETE — NULL CANDIDATE');
+
+        logLocalIceSummary(pc);
+
         return;
       }
 
       const candidate = event.candidate.toJSON();
 
-      debug('NEW LOCAL ICE CANDIDATE', {
-        candidate,
-        type: candidate.candidate?.match(/typ ([a-z]+)/)?.[1]
+      const candidateType =
+        candidate.candidate?.match(/ typ ([a-z]+)/)?.[1]
+        || 'unknown';
+
+      debug('LOCAL ICE CANDIDATE', {
+        type: candidateType,
+        protocol: event.candidate.protocol,
+        sdpMid: event.candidate.sdpMid,
+        sdpMLineIndex: event.candidate.sdpMLineIndex
       });
 
       const current = currentCallRef.current;
@@ -279,7 +423,13 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     pc.onicegatheringstatechange = () => {
-      debug('ICE gathering state:', pc.iceGatheringState);
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('ICE GATHERING STATE', pc.iceGatheringState);
+
+      if (pc.iceGatheringState === 'complete') {
+        logLocalIceSummary(pc);
+      }
     };
 
     // ------------------------------------------
@@ -287,7 +437,22 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     pc.oniceconnectionstatechange = () => {
-      debug('ICE connection state:', pc.iceConnectionState);
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('ICE CONNECTION STATE CHANGED', {
+        state: pc.iceConnectionState,
+        connectionState: pc.connectionState,
+        gatheringState: pc.iceGatheringState,
+        signalingState: pc.signalingState
+      });
+
+      if (
+        pc.iceConnectionState === 'connected' ||
+        pc.iceConnectionState === 'completed' ||
+        pc.iceConnectionState === 'failed'
+      ) {
+        logSelectedIcePair(pc);
+      }
     };
 
     // ------------------------------------------
@@ -295,25 +460,33 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     pc.onsignalingstatechange = () => {
-      debug('Signaling state:', pc.signalingState);
+      if (pc !== peerConnectionRef.current) return;
+
+      debug('SIGNALING STATE', pc.signalingState);
     };
 
     // ------------------------------------------
-    // CONNECTION
+    // PEER CONNECTION
     // ------------------------------------------
 
     pc.onconnectionstatechange = () => {
+      if (pc !== peerConnectionRef.current) return;
+
       const state = pc.connectionState;
 
-      debug('Connection state:', state);
-
-      if (pc !== peerConnectionRef.current) return;
+      debug('PEER CONNECTION STATE CHANGED', {
+        state,
+        iceState: pc.iceConnectionState,
+        signalingState: pc.signalingState
+      });
 
       if (state === 'connected') {
         debug('CALL CONNECTED SUCCESSFULLY');
 
         setCallStatus('connected');
         setInCall(true);
+
+        logSelectedIcePair(pc);
       }
 
       if (state === 'connecting') {
@@ -321,20 +494,16 @@ export function useCall(socket, chatId, name, peerName) {
       }
 
       if (state === 'disconnected') {
-        debug('Connection temporarily disconnected');
         setCallStatus('disconnected');
       }
 
       if (state === 'failed') {
-        debugError('CONNECTION FAILED');
-
         setCallError('Не удалось установить соединение');
         cleanupCall(false);
-        return;
       }
 
       if (state === 'closed') {
-        setInCall(false);
+        debug('PEER CONNECTION CLOSED');
       }
     };
 
@@ -361,7 +530,9 @@ export function useCall(socket, chatId, name, peerName) {
       }
 
       if (chatId == null || !name || !peerName) {
-        throw new Error('Отсутствует chatId, name или peerName');
+        throw new Error(
+          'Отсутствует chatId, name или peerName'
+        );
       }
 
       if (currentCallRef.current) {
@@ -382,7 +553,11 @@ export function useCall(socket, chatId, name, peerName) {
       setCallStatus('calling');
       setCallError(null);
 
-      debug('Call initialized', call);
+      debug('Call initialized', {
+        callId,
+        chatId,
+        peerName
+      });
 
       const stream = await getMicrophone();
 
@@ -390,6 +565,11 @@ export function useCall(socket, chatId, name, peerName) {
         debug('Call cancelled while waiting for microphone');
 
         stream.getTracks().forEach(track => track.stop());
+
+        if (localStreamRef.current === stream) {
+          localStreamRef.current = null;
+          setLocalStream(null);
+        }
 
         return;
       }
@@ -408,8 +588,7 @@ export function useCall(socket, chatId, name, peerName) {
 
       debug('Offer created', {
         type: offer.type,
-        sdpLength: offer.sdp?.length,
-        offer
+        sdpLength: offer.sdp?.length
       });
 
       await pc.setLocalDescription(offer);
@@ -427,7 +606,9 @@ export function useCall(socket, chatId, name, peerName) {
       });
 
       if (!sent) {
-        throw new Error('Не удалось отправить предложение звонка');
+        throw new Error(
+          'Не удалось отправить предложение звонка'
+        );
       }
 
       debug('OFFER SENT');
@@ -451,7 +632,11 @@ export function useCall(socket, chatId, name, peerName) {
   // ==========================================
 
   const receiveCall = (data) => {
-    debug('INCOMING OFFER PROCESSING', data);
+    debug('INCOMING OFFER PROCESSING', {
+      callId: data.call_id,
+      chatId: data.chat_id,
+      sender: data.sender
+    });
 
     if (currentCallRef.current) {
       debug('Incoming call rejected: already busy');
@@ -477,7 +662,13 @@ export function useCall(socket, chatId, name, peerName) {
     currentCallRef.current = call;
     incomingOfferRef.current = data.offer;
 
-    debug('Incoming call stored', call);
+    pendingIceCandidatesRef.current = [];
+
+    debug('Incoming call stored', {
+      callId: call.call_id,
+      chatId: call.chat_id,
+      peerName: call.peerName
+    });
 
     setIncomingCall({
       call_id: data.call_id,
@@ -505,7 +696,11 @@ export function useCall(socket, chatId, name, peerName) {
 
       callId = current.call_id;
 
-      debug('ANSWERING CALL', current);
+      debug('ANSWERING CALL', {
+        callId,
+        chatId: current.chat_id,
+        peerName: current.peerName
+      });
 
       setCallStatus('connecting');
 
@@ -515,6 +710,11 @@ export function useCall(socket, chatId, name, peerName) {
         debug('Answer cancelled while waiting for microphone');
 
         stream.getTracks().forEach(track => track.stop());
+
+        if (localStreamRef.current === stream) {
+          localStreamRef.current = null;
+          setLocalStream(null);
+        }
 
         return;
       }
@@ -547,11 +747,66 @@ export function useCall(socket, chatId, name, peerName) {
 
       debug('Answer created', {
         type: answer.type,
-        sdpLength: answer.sdp?.length,
-        answer
+        sdpLength: answer.sdp?.length
       });
 
+      debug('ANSWER SDP AUDIO INFO', {
+  audioLine: answer.sdp
+    ?.split('\r\n')
+    .find(line => line.startsWith('m=audio')),
+  hasIceUfrag: answer.sdp?.includes('a=ice-ufrag:'),
+  hasIceOptions: answer.sdp?.includes('a=ice-options:'),
+  transceivers: pc.getTransceivers().map(t => ({
+    mid: t.mid,
+    direction: t.direction,
+    senderTrack: t.sender.track?.kind ?? null
+  }))
+});
+
       await pc.setLocalDescription(answer);
+
+      debug('BROWSER INFO', {
+  userAgent: navigator.userAgent,
+  platform: navigator.platform,
+  online: navigator.onLine,
+  mediaDevices: !!navigator.mediaDevices,
+  getUserMedia: !!navigator.mediaDevices?.getUserMedia
+});
+
+debug('TRANSCEIVER DETAILS', pc.getTransceivers().map(t => ({
+  mid: t.mid,
+  direction: t.direction,
+  currentDirection: t.currentDirection,
+  senderTrack: t.sender.track?.kind ?? null,
+  senderTrackState: t.sender.track?.readyState ?? null,
+  receiverTrack: t.receiver.track?.kind ?? null
+})));
+
+debug('PEER CONNECTION CONFIGURATION', {
+  config: JSON.stringify(pc.getConfiguration(), null, 2),
+  transceivers: JSON.stringify(
+    pc.getTransceivers().map(t => ({
+      mid: t.mid,
+      direction: t.direction,
+      currentDirection: t.currentDirection,
+      senderTrack: t.sender.track?.kind ?? null,
+      senderTrackState: t.sender.track?.readyState ?? null,
+      receiverTrack: t.receiver.track?.kind ?? null
+    })),
+    null,
+    2
+  )
+});
+
+      debug('LOCAL DESCRIPTION AFTER SET', {
+  type: pc.localDescription?.type,
+  hasAudio: pc.localDescription?.sdp?.includes('m=audio'),
+  candidateCount: (
+    pc.localDescription?.sdp
+      ?.match(/^a=candidate:/gm) || []
+  ).length,
+  iceGatheringState: pc.iceGatheringState
+});
 
       if (pc !== peerConnectionRef.current) return;
 
@@ -566,7 +821,9 @@ export function useCall(socket, chatId, name, peerName) {
       });
 
       if (!sent) {
-        throw new Error('Не удалось отправить ответ на звонок');
+        throw new Error(
+          'Не удалось отправить ответ на звонок'
+        );
       }
 
       setIncomingCall(null);
@@ -596,7 +853,10 @@ export function useCall(socket, chatId, name, peerName) {
 
     if (!current) return;
 
-    debug('REJECTING CALL', current);
+    debug('REJECTING CALL', {
+      callId: current.call_id,
+      peerName: current.peerName
+    });
 
     emitSignal('call_reject', {
       call_id: current.call_id,
@@ -615,7 +875,11 @@ export function useCall(socket, chatId, name, peerName) {
 
   const handleAnswer = async (data) => {
     try {
-      debug('PROCESSING REMOTE ANSWER', data);
+      debug('PROCESSING REMOTE ANSWER', {
+        callId: data.call_id,
+        chatId: data.chat_id,
+        sender: data.sender
+      });
 
       if (!isCurrentCall(data)) {
         debug('Answer ignored: call_id/chat_id mismatch');
@@ -632,6 +896,21 @@ export function useCall(socket, chatId, name, peerName) {
       await pc.setRemoteDescription(
         new RTCSessionDescription(data.answer)
       );
+
+      debug('TRANSCEIVERS AFTER REMOTE OFFER', 
+      pc.getTransceivers().map(t => ({
+        mid: t.mid,
+        direction: t.direction,
+        currentDirection: t.currentDirection,
+        senderTrack: t.sender.track?.kind ?? null,
+        receiverTrack: t.receiver.track?.kind ?? null
+      }))
+    );
+
+    debug('ICE CONFIGURATION', {
+      iceTransportPolicy: pc.getConfiguration().iceTransportPolicy ?? 'all',
+      iceServers: pc.getConfiguration().iceServers.map(server => server.urls)
+    });
 
       if (pc !== peerConnectionRef.current) return;
 
@@ -653,41 +932,60 @@ export function useCall(socket, chatId, name, peerName) {
   // ==========================================
 
   const handleIceCandidate = async (data) => {
-    debug('PROCESSING REMOTE ICE', data);
+    const candidate = data?.candidate;
 
-    if (!isCurrentCall(data)) {
-      debug('ICE ignored: call_id/chat_id mismatch', {
-        received: {
-          call_id: data.call_id,
-          chat_id: data.chat_id
-        },
-        current: currentCallRef.current
-      });
+    if (!candidate) {
+      debug('ICE ignored: candidate is empty');
+      return;
+    }
 
+    const current = currentCallRef.current;
+
+    if (
+      !current ||
+      data.call_id !== current.call_id ||
+      data.chat_id !== current.chat_id
+    ) {
+      debug('ICE ignored: call mismatch');
       return;
     }
 
     const pc = peerConnectionRef.current;
 
     if (!pc || !pc.remoteDescription) {
-      debug('ICE queued: remote description not ready');
+      pendingIceCandidatesRef.current.push({
+        call_id: data.call_id,
+        candidate
+      });
 
-      pendingIceCandidatesRef.current.push(data.candidate);
+      debug('ICE queued', {
+        reason: !pc
+          ? 'PeerConnection missing'
+          : 'Remote description missing',
+
+        queueLength: pendingIceCandidatesRef.current.length,
+
+        type: candidate.candidate
+          ?.match(/ typ ([a-z]+)/)?.[1] || 'unknown'
+      });
 
       return;
     }
 
+    if (pc !== peerConnectionRef.current) return;
+
     try {
       await pc.addIceCandidate(
-        new RTCIceCandidate(data.candidate)
+        new RTCIceCandidate(candidate)
       );
 
-      if (pc !== peerConnectionRef.current) return;
-
-      debug('REMOTE ICE SUCCESSFULLY ADDED');
+      debug('REMOTE ICE CANDIDATE ADDED', {
+        type: candidate.candidate
+          ?.match(/ typ ([a-z]+)/)?.[1] || 'unknown'
+      });
 
     } catch (error) {
-      debugError('REMOTE ICE FAILED', error);
+      debugError('FAILED TO ADD REMOTE ICE', error);
     }
   };
 
@@ -698,7 +996,10 @@ export function useCall(socket, chatId, name, peerName) {
   const endCall = () => {
     const current = currentCallRef.current;
 
-    debug('END CALL REQUESTED', current);
+    debug('END CALL REQUESTED', {
+      callId: current?.call_id,
+      peerName: current?.peerName
+    });
 
     if (current) {
       emitSignal('call_end', {
@@ -730,7 +1031,12 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     const handleOfferEvent = (data) => {
-      debug('INCOMING ← call_offer', data);
+      debug('INCOMING ← call_offer', {
+        callId: data.call_id,
+        chatId: data.chat_id,
+        sender: data.sender,
+        target: data.target
+      });
 
       if (data.sender === name) {
         debug('Offer ignored: own event');
@@ -747,6 +1053,7 @@ export function useCall(socket, chatId, name, peerName) {
           received: data.chat_id,
           expected: chatId
         });
+
         return;
       }
 
@@ -758,7 +1065,12 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     const handleAnswerEvent = (data) => {
-      debug('INCOMING ← call_answer', data);
+      debug('INCOMING ← call_answer', {
+        callId: data.call_id,
+        chatId: data.chat_id,
+        sender: data.sender,
+        target: data.target
+      });
 
       if (data.sender === name) return;
 
@@ -772,7 +1084,12 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     const handleIceEvent = (data) => {
-      debug('INCOMING ← call_ice_candidate', data);
+      debug('INCOMING ← call_ice_candidate', {
+        callId: data.call_id,
+        chatId: data.chat_id,
+        sender: data.sender,
+        target: data.target
+      });
 
       if (data.sender === name) return;
 
@@ -786,7 +1103,10 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     const handleEndEvent = (data) => {
-      debug('INCOMING ← call_end', data);
+      debug('INCOMING ← call_end', {
+        callId: data.call_id,
+        sender: data.sender
+      });
 
       if (data.sender === name) return;
 
@@ -804,7 +1124,11 @@ export function useCall(socket, chatId, name, peerName) {
     // ------------------------------------------
 
     const handleRejectEvent = (data) => {
-      debug('INCOMING ← call_reject', data);
+      debug('INCOMING ← call_reject', {
+        callId: data.call_id,
+        sender: data.sender,
+        reason: data.reason
+      });
 
       if (data.sender === name) return;
 
