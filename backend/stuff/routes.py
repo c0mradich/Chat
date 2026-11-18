@@ -1,6 +1,6 @@
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app, url_for
-from flask import request, jsonify, session, render_template
+from flask import request, jsonify, session, render_template, send_file, abort
 from stuff import db
 from stuff.db import User, Chat, Message, ChatParticipant
 from Python_Utils.utils import find_chat, create_chat
@@ -11,10 +11,10 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
+from io import BytesIO
 from datetime import datetime
 
 from supabase import create_client
-from fastapi import UploadFile, File, Response
 
 supabase = None
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -186,17 +186,21 @@ def register_routes(app, socketio):
                     name_part, ext_part = os.path.splitext(filename)
                     if len(name_part) == 64 and ext_part:  # Строго 64 символа + расширение
                         file_path = os.path.join(UPLOAD_FOLDER, filename)
-                        if os.path.isfile(file_path):
+                        file_bytes = None
+                        if supabase is not None:
+                            try:
+                                file_bytes = supabase.storage.from_("uploads").download(filename)
+                            except Exception:
+                                # Existing uploads may still be on local disk.
+                                app.logger.warning("File not found in Supabase: %s", filename)
+                        if file_bytes is None and os.path.isfile(file_path):
                             with open(file_path, "rb") as f:
                                 file_bytes = f.read()
-                                base64_data = base64.b64encode(file_bytes).decode('utf-8')
-                            
-                            # MIME тип — можно улучшить по желанию
+
+                        if file_bytes is not None:
+                            base64_data = base64.b64encode(file_bytes).decode('utf-8')
                             mime_type = get_mime_type_from_extension(ext_part)
-                            data_url = f"data:{mime_type};base64,{base64_data}"
-                            
-                            # Добавляем content
-                            msg_dict['content'] = data_url
+                            msg_dict['content'] = f"data:{mime_type};base64,{base64_data}"
 
                 messages_data.append(msg_dict)
             return jsonify({"messages": messages_data}), 200
@@ -232,7 +236,8 @@ def register_routes(app, socketio):
 
             supabase.storage.from_("uploads").upload(
                 hashed_filename,
-                file_data
+                file_data,
+                {"content-type": file.mimetype or "application/octet-stream"}
             )
 
         else:
@@ -249,17 +254,23 @@ def register_routes(app, socketio):
             "path": f"/uploads/{hashed_filename}"
         })
     
-    @app.get("/uploads/{filename}")
-    async def get_upload(filename: str):
+    @app.route("/uploads/<path:filename>", methods=["GET"])
+    def get_upload(filename):
+        if supabase is not None:
+            try:
+                data = supabase.storage.from_("uploads").download(filename)
+                _, ext = os.path.splitext(filename)
+                return send_file(
+                    BytesIO(data),
+                    mimetype=get_mime_type_from_extension(ext),
+                    download_name=os.path.basename(filename)
+                )
+            except Exception:
+                app.logger.exception("Failed to download file from Supabase: %s", filename)
 
-        data = supabase.storage \
-            .from_("uploads") \
-            .download(filename)
-
-        return Response(
-            content=data,
-            media_type="application/octet-stream"
-        )
+        if os.path.isfile(os.path.join(UPLOAD_FOLDER, filename)):
+            return send_from_directory(UPLOAD_FOLDER, filename)
+        abort(404)
 
     @app.route("/getUserList", methods=["GET"])
     def getUserList():
