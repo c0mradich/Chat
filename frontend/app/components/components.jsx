@@ -83,20 +83,20 @@ export function ChatHeader({currentChatInfo, setSideBarOpen, sideBarOpen, startC
 
       {incomingCall && (
         <div className="incoming-call">
-          <span>Входящий звонок: {incomingCall.peerName}</span>
+          <span>Incoming call: {incomingCall.peerName}</span>
 
           <button
             className="accept-call"
             onClick={answerCall}
           >
-            Принять
+            Accept
           </button>
 
           <button
             className="reject-call"
             onClick={rejectCall}
           >
-            Отклонить
+            Reject
           </button>
         </div>
       )}

@@ -231,22 +231,23 @@ def register_routes(app, socketio):
             timestamp
         )
 
-        if SUPABASE_URL:
-            file_data = file.read()
-
-            supabase.storage.from_("uploads").upload(
-                hashed_filename,
-                file_data,
-                {"content-type": file.mimetype or "application/octet-stream"}
-            )
-
-        else:
-            save_path = os.path.join(
-                UPLOAD_FOLDER,
-                hashed_filename
-            )
-
-            file.save(save_path)
+        try:
+            if supabase is not None:
+                file_data = file.read()
+                supabase.storage.from_("uploads").upload(
+                    hashed_filename,
+                    file_data,
+                    {"content-type": file.mimetype or "application/octet-stream"}
+                )
+            else:
+                save_path = os.path.join(UPLOAD_FOLDER, hashed_filename)
+                file.save(save_path)
+        except Exception:
+            app.logger.exception("File upload failed (Supabase configured: %s)", supabase is not None)
+            return jsonify({
+                "success": False,
+                "message": "Не удалось загрузить файл в хранилище. Проверьте настройки Supabase и bucket uploads."
+            }), 502
 
         return jsonify({
             "success": True,

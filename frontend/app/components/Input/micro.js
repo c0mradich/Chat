@@ -20,7 +20,7 @@ export const startMicro = async (setMicRecorder, setMicStream, setMimeType) => {
     setMicRecorder(recorder);
     setMimeType(mimeType);
 
-    recorder.start(); // без интервала — пусть пишет цельный файл
+    recorder.start();
   } catch (err) {
     console.error('Ошибка при включении микрофона:', err);
   }
@@ -56,7 +56,10 @@ export const stopMicro = async (
           credentials: 'include'
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success || !data.path) {
+          throw new Error(data.message || `Не удалось загрузить аудио (HTTP ${res.status})`);
+        }
         console.log('Upload result:', data);
 
         handleSendMessage(

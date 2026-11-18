@@ -16,8 +16,10 @@ export async function handleFileChange(e, sender, chatId, handleSendMessage) {
       credentials: "include",
     });
 
-    const data = await res.json();
-    console.log("Upload result:", data);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success || !data.path) {
+      throw new Error(data.message || `Не удалось загрузить файл (HTTP ${res.status})`);
+    }
 
     handleSendMessage(
       { path: data.path, name: file.name, type: file.type },

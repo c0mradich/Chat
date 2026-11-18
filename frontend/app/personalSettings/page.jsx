@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import styles from "./data.module.css";
 import { changeAvatar } from "../components/Input/changeAvatar";
 
-
 const apiURL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PersonalSettings() {
@@ -16,7 +15,7 @@ export default function PersonalSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [avatar, setAvatar] = useState(null)
+  const [avatar, setAvatar] = useState(null);
 
   const hasChanges = name.trim() !== initialName;
   const isValid = name.trim().length > 3;
@@ -29,19 +28,21 @@ export default function PersonalSettings() {
         });
 
         if (!res.ok) {
-          throw new Error("Не удалось загрузить данные профиля.");
+          throw new Error("Failed to load profile data.");
         }
 
         const userData = await res.json();
-        console.log(userData)
+        console.log(userData);
+
         const currentName = userData.name ?? "";
-        const  avatar_from_data = userData.avatar ?? ""
-        avatar_from_data && setAvatar(avatar_from_data)
+        const avatar_from_data = userData.avatar ?? "";
+
+        avatar_from_data && setAvatar(avatar_from_data);
 
         setName(currentName);
         setInitialName(currentName);
       } catch (e) {
-        setError(e.message || "Произошла ошибка.");
+        setError(e.message || "An unexpected error occurred.");
       } finally {
         setLoading(false);
       }
@@ -74,14 +75,14 @@ export default function PersonalSettings() {
       });
 
       if (!res.ok) {
-        throw new Error("Не удалось сохранить изменения.");
+        throw new Error("Failed to save changes.");
       }
 
       setName(trimmedName);
       setInitialName(trimmedName);
       setSuccess(true);
     } catch (e) {
-      setError(e.message || "Произошла ошибка при сохранении.");
+      setError(e.message || "An error occurred while saving your changes.");
     } finally {
       setSaving(false);
     }
@@ -92,7 +93,7 @@ export default function PersonalSettings() {
       <main className={styles.page}>
         <div className={styles.loadingCard}>
           <span className={styles.spinner} />
-          <p>Загружаем настройки...</p>
+          <p>Loading settings...</p>
         </div>
       </main>
     );
@@ -104,12 +105,12 @@ export default function PersonalSettings() {
         <div className={styles.topLine}>
           <a href="/" className={styles.backLink}>
             <span aria-hidden="true">←</span>
-            <span>Вернуться в чат</span>
+            <span>Back to chat</span>
           </a>
 
           <span className={styles.settingsBadge}>
             <span className={styles.statusDot} />
-            Настройки
+            Settings
           </span>
         </div>
 
@@ -122,7 +123,7 @@ export default function PersonalSettings() {
             ) : (
               <img
                 src={`${apiURL}${avatar.startsWith("/") ? "" : "/"}${avatar}`}
-                alt="Аватар"
+                alt="Profile picture"
                 className={styles.avatarImage}
               />
             )}
@@ -130,8 +131,8 @@ export default function PersonalSettings() {
             <button
               type="button"
               className={styles.avatarUpload}
-              aria-label="Изменить аватар"
-              title="Изменить аватар"
+              aria-label="Change profile picture"
+              title="Change profile picture"
               onClick={() => fileInputRef.current?.click()}
             >
               ✎
@@ -159,10 +160,10 @@ export default function PersonalSettings() {
           </div>
 
           <div>
-            <p className={styles.eyebrow}>ВАШ АККАУНТ</p>
-            <h1 className={styles.title}>Настройки профиля</h1>
+            <p className={styles.eyebrow}>YOUR ACCOUNT</p>
+            <h1 className={styles.title}>Profile Settings</h1>
             <p className={styles.subtitle}>
-              Управляйте своими личными данными.
+              Manage your personal information.
             </p>
           </div>
         </header>
@@ -171,12 +172,12 @@ export default function PersonalSettings() {
 
         <form onSubmit={handleSave} className={styles.form}>
           <div className={styles.sectionHeading}>
-            <h2>Личная информация</h2>
-            <p>Измените имя, которое видят другие пользователи.</p>
+            <h2>Personal Information</h2>
+            <p>Change your name as it appears to other users.</p>
           </div>
 
           <label htmlFor="name" className={styles.label}>
-            Имя пользователя
+            USERNAME
           </label>
 
           <div className={styles.inputWrapper}>
@@ -195,7 +196,7 @@ export default function PersonalSettings() {
                 setSuccess(false);
               }}
               className={styles.input}
-              placeholder="Введите имя"
+              placeholder="Enter your username"
               autoComplete="nickname"
               minLength={4}
               maxLength={40}
@@ -205,7 +206,7 @@ export default function PersonalSettings() {
           </div>
 
           <p className={styles.hint}>
-            Не менее 4 символов. Пробелы по краям не учитываются.
+            At least 4 characters. Leading and trailing spaces are ignored.
           </p>
 
           {error && (
@@ -218,13 +219,13 @@ export default function PersonalSettings() {
           {success && (
             <div className={styles.successMessage} role="status">
               <span aria-hidden="true">✓</span>
-              Изменения успешно сохранены.
+              Your changes have been saved successfully.
             </div>
           )}
 
           <div className={styles.formFooter}>
             <span className={styles.changeStatus}>
-              {hasChanges ? "Есть несохранённые изменения" : "Всё актуально"}
+              {hasChanges ? "Unsaved changes" : "All changes saved"}
             </span>
 
             <button
@@ -235,11 +236,11 @@ export default function PersonalSettings() {
               {saving ? (
                 <>
                   <span className={styles.buttonSpinner} />
-                  Сохранение...
+                  Saving...
                 </>
               ) : (
                 <>
-                  Сохранить изменения
+                  Save Changes
                   <span aria-hidden="true">→</span>
                 </>
               )}
@@ -248,13 +249,13 @@ export default function PersonalSettings() {
         </form>
 
         <footer className={styles.cardFooter}>
-          <span>Настройки аккаунта</span>
-          <span>Личные данные</span>
+          <span>Account Settings</span>
+          <span>Personal Information</span>
         </footer>
       </section>
 
       <p className={styles.pageNote}>
-        Изменения вступят в силу после сохранения.
+        Changes will take effect once saved.
       </p>
     </main>
   );
