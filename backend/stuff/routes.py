@@ -13,6 +13,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_from_directory
 from datetime import datetime
 
+from supabase import create_client
+from fastapi import UploadFile, File, Response
+
+supabase = None
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+
+if SUPABASE_URL:
+    supabase = create_client(
+        SUPABASE_URL,
+        os.environ["SUPABASE_SECRET_KEY"]
+    )
+
 ph = PasswordHasher()
 
 Su_name = os.environ.get("SU_NAME")
@@ -196,23 +208,58 @@ def register_routes(app, socketio):
     @app.route("/uploads", methods=["POST"])
     def uploads():
         if "file" not in request.files:
-            return jsonify({"success": False, "message": "Файл не найден"}), 400
-        
-        file = request.files["file"]  # <— Werkzeug FileStorage
+            return jsonify({
+                "success": False,
+                "message": "Файл не найден"
+            }), 400
+
+        file = request.files["file"]
         filename = file.filename
         sender = request.form.get("sender")
         chat_id = request.form.get("chatId")
 
         timestamp = datetime.utcnow().isoformat()
-        hashed_filename = generate_file_hash4(filename, sender, chat_id, timestamp)
-        save_path = os.path.join(UPLOAD_FOLDER, hashed_filename)
-        file.save(save_path)          # сохраняем на диск
-        
-        return jsonify({"success": True, "filename": filename, "path": f"/uploads/{hashed_filename}"})
+
+        hashed_filename = generate_file_hash4(
+            filename,
+            sender,
+            chat_id,
+            timestamp
+        )
+
+        if SUPABASE_URL:
+            file_data = file.read()
+
+            supabase.storage.from_("uploads").upload(
+                hashed_filename,
+                file_data
+            )
+
+        else:
+            save_path = os.path.join(
+                UPLOAD_FOLDER,
+                hashed_filename
+            )
+
+            file.save(save_path)
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "path": f"/uploads/{hashed_filename}"
+        })
     
-    @app.route("/uploads/<path:filename>", methods=["GET"])
-    def get_upload(filename):
-        return send_from_directory(UPLOAD_FOLDER, filename)
+    @app.get("/uploads/{filename}")
+    async def get_upload(filename: str):
+
+        data = supabase.storage \
+            .from_("uploads") \
+            .download(filename)
+
+        return Response(
+            content=data,
+            media_type="application/octet-stream"
+        )
 
     @app.route("/getUserList", methods=["GET"])
     def getUserList():
