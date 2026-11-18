@@ -42,6 +42,7 @@ SU_password_hashed = ph.hash(Su_password)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 UPLOAD_AVATARS_DIR = os.path.join(BASE_DIR, 'avatars')
+AVATARS_BUCKET = "avatars"
 
 def generate_verification_token(user_id):
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
@@ -432,21 +433,39 @@ def register_routes(app, socketio):
         filename = avatar.filename
         timestamp = datetime.utcnow().isoformat()
         hashed_filename = generate_file_hash4(
-            filename, user.name, timestamp, ''
+            filename, user.name, timestamp, ""
         )
 
         save_path = os.path.join(UPLOAD_AVATARS_DIR, hashed_filename)
+        storage_path = hashed_filename
+        use_supabase = bool(supabase)
 
         try:
-            avatar.save(save_path)
+            if use_supabase:
+                avatar_bytes = avatar.read()
+                content_type = avatar.mimetype or "application/octet-stream"
 
+                supabase.storage.from_(AVATARS_BUCKET).upload(
+                    path=storage_path,
+                    file=avatar_bytes,
+                    file_options={
+                        "content-type": content_type,
+                        "upsert": "true",
+                    },
+                )
+            else:
+                os.makedirs(UPLOAD_AVATARS_DIR, exist_ok=True)
+                avatar.save(save_path)
+
+            # Храним единый путь в БД: существующие ссылки продолжают работать
+            # через маршрут /avatars/<filename>.
             user.avatar = f"/avatars/{hashed_filename}"
             db.session.commit()
 
         except Exception:
             db.session.rollback()
 
-            if os.path.exists(save_path):
+            if not use_supabase and os.path.exists(save_path):
                 os.remove(save_path)
 
             app.logger.exception("Ошибка сохранения аватара")
@@ -465,6 +484,23 @@ def register_routes(app, socketio):
 
     @app.route("/avatars/<path:filename>", methods=["GET"])
     def get_avatars(filename):
+        if supabase:
+            try:
+                avatar_bytes = (
+                    supabase.storage
+                    .from_(AVATARS_BUCKET)
+                    .download(filename)
+                )
+
+                return send_file(
+                    BytesIO(avatar_bytes),
+                    mimetype="application/octet-stream",
+                    download_name=os.path.basename(filename),
+                )
+            except Exception:
+                app.logger.exception("Ошибка получения аватара из Supabase")
+                return "", 404
+
         return send_from_directory(UPLOAD_AVATARS_DIR, filename)
     
     @app.route('/find_chat/<int:other_user_id>', methods=['GET'])
